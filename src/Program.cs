@@ -17,20 +17,23 @@ public class Program
 		IntPtr ScreenSurface = SDL_GetWindowSurface(window);
 		Canvas MyCanvas = new Canvas(1280, 720);
 		
-		Primitive CatPrim = new Primitive(new Vector2(500, 300), new Vector2(200, 0), new Vector2(100, 200));
-		
-		IntPtr Cat = SDL_LoadBMP("images/cat.bmp");
-		var CatShader = new AffineTextureMap(Cat, CatPrim);
+		Primitive MyPrim = new Primitive(new Vector2(640, 260), new Vector2(-200, 200), new Vector2(200, 200));
+		RGBTriangle Rainbow = new RGBTriangle(MyPrim);
 
 		SDL_Event e;
 		bool quit = false;
 
 		ulong CountOld = SDL_GetPerformanceCounter();
 
+		Queue<double> FrametimeQueue = new Queue<double>();
+
 		while (!quit)
 		{
 			double TimeDelta = (double) (SDL_GetPerformanceCounter() - CountOld) / SDL_GetPerformanceFrequency();
 			CountOld = SDL_GetPerformanceCounter();
+
+			FrametimeQueue.Enqueue(TimeDelta);
+			if (FrametimeQueue.Count > 256) FrametimeQueue.Dequeue();
 
 			while (SDL_PollEvent(out e) != 0)
 			{
@@ -43,23 +46,23 @@ public class Program
 					case SDL_EventType.SDL_KEYDOWN:
 						if (e.key.keysym.scancode == SDL_Scancode.SDL_SCANCODE_SPACE)
 						{
-							Console.WriteLine(1/TimeDelta + " fps");
-						}
-						if (e.key.keysym.scancode == SDL_Scancode.SDL_SCANCODE_A)
-						{
-							CatPrim.Origin.x -= 5;
+							double total = 0;
+							foreach (double Frametime in FrametimeQueue)
+							{
+								total += Frametime;
+							}
+
+							double AvgFrametime = total/256;
+							Console.WriteLine($"Avg frametime over 256 frames: {AvgFrametime * 1000}ms ({1/AvgFrametime}FPS)");
 						}
 						break;
 				}
 			}
 
 			MyCanvas.Clear();
-			CatShader.Prim = CatPrim;
-			MyCanvas.DrawPrimitive(CatPrim, CatShader);
+			MyCanvas.DrawPrimitive(MyPrim, Rainbow);
 			MyCanvas.PushToSurface(ScreenSurface);
 			SDL_UpdateWindowSurface(window);
-
-			// SDL_Delay(10);
 		}
 
 		SDL_DestroyWindow(window);
