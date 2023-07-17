@@ -1,3 +1,5 @@
+using System.Numerics;
+
 public struct Primitive
 {
     public Vector2 Origin;

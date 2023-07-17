@@ -1,5 +1,6 @@
 using static SDL2.SDL;
 using static System.MathF;
+using System.Numerics;
 
 public interface Shader
 {
@@ -52,9 +53,9 @@ public class RGBTriangle : Shader
         Vector2 PixelCenter = new Vector2(FragmentX + 0.5f, FragmentY + 0.5f);
         Vector2 UV = ShaderUtil.AffineComponent(PixelCenter, Prim);
 
-        byte Red = (byte) ((1 - UV.x - UV.y) * 255);
+        byte Red = (byte) ((1 - UV.X - UV.Y) * 255);
 
-        Color col = new Color(Red, (byte) (UV.x * 255), (byte) (UV.y * 255));
+        Color col = new Color(Red, (byte) (UV.X * 255), (byte) (UV.Y * 255));
         return new FragmentData(col, 0);
     }
 }
@@ -85,10 +86,10 @@ public static class ShaderUtil
 
         float RayLineIntersect(Vector2 RayOrigin, Vector2 RayDir, Vector2 LineOrigin, Vector2 LineDir)
         {
-            Vector2 LineNormal = new Vector2(-LineDir.y, LineDir.x);
+            Vector2 LineNormal = new Vector2(-LineDir.Y, LineDir.X);
             Vector2 RayDisplacement = RayOrigin - LineOrigin;
 
-            return -RayDisplacement.Dot(LineNormal) / RayDir.Dot(LineNormal);
+            return Vector2.Dot(-RayDisplacement, LineNormal) / Vector2.Dot(RayDir, LineNormal);
         }
     }
 
@@ -96,8 +97,8 @@ public static class ShaderUtil
     {
         SDL_Surface* TexturePtr = (SDL_Surface*) Texture;
 
-        int TexelX = (int) Floor(Math.Clamp(TexCoord.x, 0, 1) * TexturePtr->w);
-        int TexelY = (int) Floor(Math.Clamp(TexCoord.y, 0, 1) * TexturePtr->h);
+        int TexelX = (int) Floor(Math.Clamp(TexCoord.X, 0, 1) * TexturePtr->w);
+        int TexelY = (int) Floor(Math.Clamp(TexCoord.Y, 0, 1) * TexturePtr->h);
 
         uint* Start = (uint*) (TexturePtr->pixels);
         byte* PixelPtr = (byte*) (Start + TexelX + TexelY * TexturePtr->w);

@@ -1,5 +1,6 @@
 using static SDL2.SDL;
 using static System.MathF;
+using System.Numerics;
 using static MathUtil;
 public class Canvas
 {
@@ -15,8 +16,8 @@ public class Canvas
 
     public void DrawPrimitive(Primitive Prim, Shader Shader)
     {
-        Vector2 CWNormal = new Vector2(-Prim.a.y, Prim.a.x);
-        float AFirst = Prim.b.Dot(CWNormal);
+        Vector2 CWNormal = new Vector2(-Prim.a.Y, Prim.a.X);
+        float AFirst = Vector2.Dot(Prim.b, CWNormal);
 
         if (AFirst == 0) return;
 
@@ -35,8 +36,8 @@ public class Canvas
 
         Vector2[] ClockwiseVertices = new Vector2[] {Prim.Origin, Prim.Origin + First, Prim.Origin + Second, Prim.Origin};
 
-        float PrimMinY = Prim.Origin.y + Min(Min(Prim.a.y, 0), Prim.b.y);
-        float PrimMaxY = Prim.Origin.y + Max(Max(Prim.a.y, 0), Prim.b.y);
+        float PrimMinY = Prim.Origin.Y + Min(Min(Prim.a.Y, 0), Prim.b.Y);
+        float PrimMaxY = Prim.Origin.Y + Max(Max(Prim.a.Y, 0), Prim.b.Y);
 
         int PrimUpperBound = (int) Round(PrimMinY, MidpointRounding.ToNegativeInfinity);
         int PrimLowerBound = (int) Round(PrimMaxY, MidpointRounding.ToNegativeInfinity);
@@ -47,7 +48,7 @@ public class Canvas
         {
             Vector2 TraceStart = ClockwiseVertices[i];
             Vector2 TraceEnd = ClockwiseVertices[i + 1];
-            bool TraceHasLowest = TraceStart.y == PrimMaxY || TraceEnd.y == PrimMaxY;
+            bool TraceHasLowest = TraceStart.Y == PrimMaxY || TraceEnd.Y == PrimMaxY;
             Trace(TraceStart, TraceEnd, PrimUpperBound, TraceHasLowest, Scanlines);
         }
 
@@ -58,16 +59,16 @@ public class Canvas
     {
         Vector2 TracePath = End - Start;
 
-        if (TracePath.y == 0) return;
+        if (TracePath.Y == 0) return;
 
-        bool Upwards = TracePath.y < 0;
+        bool Upwards = TracePath.Y < 0;
 
-        float SlopeX = TracePath.x / TracePath.y;
-        float OffsetX = Start.x + Frac((Upwards ? -0.5f : 1.5f) - ModFrac(Start.y)) * SlopeX;
-        if (HasLowest && Upwards && ModFrac(Start.y) == 0.5f) OffsetX -= SlopeX;
+        float SlopeX = TracePath.X / TracePath.Y;
+        float OffsetX = Start.X + Frac((Upwards ? -0.5f : 1.5f) - ModFrac(Start.Y)) * SlopeX;
+        if (HasLowest && Upwards && ModFrac(Start.Y) == 0.5f) OffsetX -= SlopeX;
 
-        int TraceUpperBound = (int) Round(Min(Start.y, End.y), MidpointRounding.ToNegativeInfinity);
-        int TraceLowerBound = (int) Round(Max(Start.y, End.y), HasLowest ? MidpointRounding.ToNegativeInfinity : MidpointRounding.ToPositiveInfinity);
+        int TraceUpperBound = (int) Round(Min(Start.Y, End.Y), MidpointRounding.ToNegativeInfinity);
+        int TraceLowerBound = (int) Round(Max(Start.Y, End.Y), HasLowest ? MidpointRounding.ToNegativeInfinity : MidpointRounding.ToPositiveInfinity);
 
         int TraceLength = TraceLowerBound - TraceUpperBound;
 
