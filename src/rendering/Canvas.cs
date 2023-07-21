@@ -1,17 +1,19 @@
 using static SDL2.SDL;
 using static System.MathF;
-using System.Numerics;
 using static MathUtil;
+using System.Numerics;
+using System.Runtime.InteropServices;
 public class Canvas
 {
-    FragmentData[] FragmentBuffer;
-    int Width, Height;
+    int[] DiffuseBuffer;
+    int Width, Height, Length;
 
     public Canvas(int Width, int Height)
     {
         this.Width = Width;
         this.Height = Height;
-        this.FragmentBuffer = new FragmentData[Width * Height];
+        this.Length = Width * Height;
+        this.DiffuseBuffer = new int[Width * Height];
     }
 
     public void DrawPrimitive(Primitive Prim, Shader Shader)
@@ -65,7 +67,7 @@ public class Canvas
 
         float SlopeX = TracePath.X / TracePath.Y;
         float OffsetX = Start.X + Frac((Upwards ? -0.5f : 1.5f) - ModFrac(Start.Y)) * SlopeX;
-        if (HasLowest && Upwards && ModFrac(Start.Y) == 0.5f) OffsetX -= SlopeX;
+        if (ModFrac(Start.Y) == 0.5f && HasLowest && Upwards) OffsetX -= SlopeX;
 
         int TraceUpperBound = (int) Round(Min(Start.Y, End.Y), MidpointRounding.ToNegativeInfinity);
         int TraceLowerBound = (int) Round(Max(Start.Y, End.Y), HasLowest ? MidpointRounding.ToNegativeInfinity : MidpointRounding.ToPositiveInfinity);
@@ -105,53 +107,14 @@ public class Canvas
             
             for (int x = Math.Clamp(CurrentScan.LeftBound, 0, Width); x < Math.Clamp(CurrentScan.RightBound, 0, Width); x++)
             {
-                FragmentBuffer[Offset + x] = Shader.Compute(x, y);
+                DiffuseBuffer[Offset + x] = Shader.Compute(x, y);
             }
         }
     }
 
-    public void Clear() => Array.Clear(FragmentBuffer);
+    public void Clear() => Array.Clear(DiffuseBuffer);
 
-    public unsafe void PushToSurface(IntPtr Surface)
-    {
-        SDL_Surface* PSurface = (SDL_Surface*) Surface;
-        uint* Start = (uint*) PSurface->pixels;
-
-        for (int i = 0; i < Width * Height; i++)
-        {
-            byte* PixelPtr = (byte*)Start;
-
-            PixelPtr[2] = FragmentBuffer[i].FragColor.r;
-            PixelPtr[1] = FragmentBuffer[i].FragColor.g;
-            PixelPtr[0] = FragmentBuffer[i].FragColor.b;
-
-            Start++;
-        }
-    }
-}
-
-public struct Color
-{
-    public byte r, g, b;
-
-    public Color(byte r, byte g, byte b)
-    {
-        this.r = r;
-        this.g = g;
-        this.b = b;
-    }
-}
-
-public struct FragmentData
-{
-    public Color FragColor;
-    public float Depth;
-
-    public FragmentData(Color FragColor, float Depth)
-    {
-        this.FragColor = FragColor;
-        this.Depth = Depth;
-    }
+    public unsafe void PushToSurface(IntPtr Surface) => Marshal.Copy(DiffuseBuffer, 0, ((SDL_Surface*)Surface)->pixels, Length);
 }
 
 public struct Scanline

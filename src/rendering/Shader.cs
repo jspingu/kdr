@@ -1,10 +1,9 @@
-using static SDL2.SDL;
-using static System.MathF;
+using static ShaderUtil;
 using System.Numerics;
 
 public interface Shader
 {
-    FragmentData Compute(int FragmentX, int FragmentY);
+    int Compute(int FragmentX, int FragmentY);
 }
 
 public class Checkerboard : Shader
@@ -13,12 +12,12 @@ public class Checkerboard : Shader
 
     public Checkerboard(int TileSize) => this.TileSize = TileSize;
 
-    public FragmentData Compute(int FragmentX, int FragmentY)
+    public int Compute(int FragmentX, int FragmentY)
     {
         FragmentX /= TileSize; FragmentY /= TileSize;
 
         byte intensity = (byte)((FragmentX + FragmentY) % 2 * 255);
-        return new FragmentData(new Color(intensity, intensity, intensity), 0);
+        return Color(intensity, intensity, intensity);
     }
 }
 
@@ -32,13 +31,12 @@ public class AffineTextureMap : Shader
         this.Texture = Texture;
         this.Prim = Prim;
     }
-    public FragmentData Compute(int FragmentX, int FragmentY)
+    public int Compute(int FragmentX, int FragmentY)
     {
         Vector2 PixelCenter = new Vector2(FragmentX + 0.5f, FragmentY + 0.5f);
-        Vector2 UV = ShaderUtil.AffineComponent(PixelCenter, Prim);
-        Color TexelColor = ShaderUtil.NearestTexel(UV, Texture);
+        Vector2 UV = AffineComponent(PixelCenter, Prim);
 
-        return new FragmentData(TexelColor, 0);
+        return NearestTexel(UV, Texture);
     }
 }
 
@@ -48,61 +46,28 @@ public class RGBTriangle : Shader
 
     public RGBTriangle(Primitive Prim) => this.Prim = Prim;
 
-    public FragmentData Compute(int FragmentX, int FragmentY)
+    public int Compute(int FragmentX, int FragmentY)
     {
         Vector2 PixelCenter = new Vector2(FragmentX + 0.5f, FragmentY + 0.5f);
-        Vector2 UV = ShaderUtil.AffineComponent(PixelCenter, Prim);
+        Vector2 UV = AffineComponent(PixelCenter, Prim);
 
         byte Red = (byte) ((1 - UV.X - UV.Y) * 255);
 
-        Color col = new Color(Red, (byte) (UV.X * 255), (byte) (UV.Y * 255));
-        return new FragmentData(col, 0);
+        return Color(Red, (byte) (UV.X * 255), (byte) (UV.Y * 255));
     }
 }
 
 public class ColorFill : Shader
 {
-    Color FillColor;
+    int FillColor;
 
-    public ColorFill(Color FillColor)
+    public ColorFill(int FillColor)
     {
         this.FillColor = FillColor;
     }
 
-    public FragmentData Compute(int FragmentX, int FragmentY)
+    public int Compute(int FragmentX, int FragmentY)
     {
-        return new FragmentData(FillColor, 0);
-    }
-}
-
-public static class ShaderUtil
-{
-    public static Vector2 AffineComponent(Vector2 Point, Primitive Basis)
-    {
-        float AComponent = RayLineIntersect(Point, -Basis.a, Basis.Origin, Basis.b);
-        float BComponent = RayLineIntersect(Point, -Basis.b, Basis.Origin, Basis.a); 
-
-        return new Vector2(AComponent, BComponent);
-
-        float RayLineIntersect(Vector2 RayOrigin, Vector2 RayDir, Vector2 LineOrigin, Vector2 LineDir)
-        {
-            Vector2 LineNormal = new Vector2(-LineDir.Y, LineDir.X);
-            Vector2 RayDisplacement = RayOrigin - LineOrigin;
-
-            return Vector2.Dot(-RayDisplacement, LineNormal) / Vector2.Dot(RayDir, LineNormal);
-        }
-    }
-
-    public static unsafe Color NearestTexel(Vector2 TexCoord, IntPtr Texture)
-    {
-        SDL_Surface* TexturePtr = (SDL_Surface*) Texture;
-
-        int TexelX = (int) Floor(Math.Clamp(TexCoord.X, 0, 1) * TexturePtr->w);
-        int TexelY = (int) Floor(Math.Clamp(TexCoord.Y, 0, 1) * TexturePtr->h);
-
-        uint* Start = (uint*) (TexturePtr->pixels);
-        byte* PixelPtr = (byte*) (Start + TexelX + TexelY * TexturePtr->w);
-
-        return new Color(PixelPtr[2], PixelPtr[1], PixelPtr[0]);
+        return FillColor;
     }
 }
