@@ -6,7 +6,7 @@ public class Program
 	{
 		SDL_Init(SDL_INIT_VIDEO);
 
-		var window = SDL_CreateWindow(
+		IntPtr window = SDL_CreateWindow(
 			"Title",
 			SDL_WINDOWPOS_CENTERED,
 			SDL_WINDOWPOS_CENTERED,
@@ -28,10 +28,15 @@ public class Program
 
 		Queue<double> FrametimeQueue = new Queue<double>();
 
+		float Time = 0;
+		float Angle = 0;
+
 		while (!quit)
 		{
 			double TimeDelta = (double) (SDL_GetPerformanceCounter() - CountOld) / SDL_GetPerformanceFrequency();
 			CountOld = SDL_GetPerformanceCounter();
+
+			Time += (float) TimeDelta;
 
 			FrametimeQueue.Enqueue(TimeDelta);
 			if (FrametimeQueue.Count > 256) FrametimeQueue.Dequeue();
@@ -45,22 +50,42 @@ public class Program
 						break;
 
 					case SDL_EventType.SDL_KEYDOWN:
-						if (e.key.keysym.scancode == SDL_Scancode.SDL_SCANCODE_SPACE)
+						switch (e.key.keysym.scancode)
 						{
-							double total = 0;
-							foreach (double Frametime in FrametimeQueue)
-							{
-								total += Frametime;
-							}
+							case SDL_Scancode.SDL_SCANCODE_SPACE:
+								double total = 0;
+								foreach (double Frametime in FrametimeQueue)
+								{
+									total += Frametime;
+								}
 
-							double AvgFrametime = total/256;
-							Console.WriteLine($"Avg frametime over 256 frames: {AvgFrametime * 1000}ms ({1/AvgFrametime}FPS)");
+								double AvgFrametime = total/256;
+								Console.WriteLine($"Avg frametime over 256 frames: {AvgFrametime * 1000}ms ({1/AvgFrametime}FPS)");
+								
+								break;
+
+							case SDL_Scancode.SDL_SCANCODE_LEFT:
+								Angle += 0.01f;
+								break;
+
+							case SDL_Scancode.SDL_SCANCODE_RIGHT:
+								Angle -= 0.01f;
+								break;
+
+							case SDL_Scancode.SDL_SCANCODE_T:
+								Console.WriteLine(MyPrim.a);
+								Console.WriteLine(MyPrim.b);
+								break;
 						}
+
 						break;
 				}
 			}
 
+			MyPrim.a = new Vector2(-200, 200) * MathF.Cos(Angle) + new Vector2(200, 200) * MathF.Sin(Angle);
+
 			MyCanvas.Clear();
+			Rainbow.Prim = MyPrim;
 			MyCanvas.DrawPrimitive(MyPrim, Rainbow);
 			MyCanvas.PushToSurface(ScreenSurface);
 			SDL_UpdateWindowSurface(window);

@@ -41,8 +41,8 @@ public class Canvas
         float PrimMinY = Prim.Origin.Y + Min(Min(Prim.a.Y, 0), Prim.b.Y);
         float PrimMaxY = Prim.Origin.Y + Max(Max(Prim.a.Y, 0), Prim.b.Y);
 
-        int PrimUpperBound = (int) Round(PrimMinY, MidpointRounding.ToNegativeInfinity);
-        int PrimLowerBound = (int) Round(PrimMaxY, MidpointRounding.ToNegativeInfinity);
+        int PrimUpperBound = iRound(PrimMinY, false);
+        int PrimLowerBound = iRound(PrimMaxY, false);
 
         Scanline[] Scanlines = new Scanline[PrimLowerBound - PrimUpperBound];
 
@@ -69,8 +69,8 @@ public class Canvas
         float OffsetX = Start.X + Frac((Upwards ? -0.5f : 1.5f) - ModFrac(Start.Y)) * SlopeX;
         if (ModFrac(Start.Y) == 0.5f && HasLowest && Upwards) OffsetX -= SlopeX;
 
-        int TraceUpperBound = (int) Round(Min(Start.Y, End.Y), MidpointRounding.ToNegativeInfinity);
-        int TraceLowerBound = (int) Round(Max(Start.Y, End.Y), HasLowest ? MidpointRounding.ToNegativeInfinity : MidpointRounding.ToPositiveInfinity);
+        int TraceUpperBound = iRound(Min(Start.Y, End.Y), false);
+        int TraceLowerBound = iRound(Max(Start.Y, End.Y), !HasLowest);
 
         int TraceLength = TraceLowerBound - TraceUpperBound;
 
@@ -80,7 +80,7 @@ public class Canvas
 
             for (int i = 0; i < TraceLength; i++)
             {
-                Scanlines[ScanlineIndex].LeftBound = (int) Round(OffsetX, MidpointRounding.ToNegativeInfinity);
+                Scanlines[ScanlineIndex].LeftBound = iRound(OffsetX, false);
                 OffsetX -= SlopeX;
                 ScanlineIndex--;
             }
@@ -91,7 +91,7 @@ public class Canvas
 
             for (int i = 0; i < TraceLength; i++)
             {
-                Scanlines[ScanlineIndex].RightBound = (int) Round(OffsetX, MidpointRounding.ToNegativeInfinity);
+                Scanlines[ScanlineIndex].RightBound = iRound(OffsetX, false);
                 OffsetX += SlopeX;
                 ScanlineIndex++;
             }
