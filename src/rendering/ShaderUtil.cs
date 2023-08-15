@@ -22,16 +22,13 @@ public static class ShaderUtil
 
     public static unsafe int NearestTexel(Vector2 TexCoord, IntPtr Texture)
     {
-        SDL_Surface* TexturePtr = (SDL_Surface*) Texture;
+        SDL_Surface* TexturePtr = (SDL_Surface*)Texture;
 
         int TexelX = (int) Floor(Math.Clamp(TexCoord.X, 0, 1) * TexturePtr->w);
         int TexelY = (int) Floor(Math.Clamp(TexCoord.Y, 0, 1) * TexturePtr->h);
 
-        uint* Start = (uint*) (TexturePtr->pixels);
-        byte* PixelPtr = (byte*) (Start + TexelX + TexelY * TexturePtr->w);
-
-        return Color(PixelPtr[2], PixelPtr[1], PixelPtr[0]);
+        return ((int*)TexturePtr->pixels)[TexelX + TexelY * TexturePtr->w];
     }
 
-    public static int Color(int Red, int Green, int Blue) => (Red<<16) + (Green<<8) + Blue;
+    public static int Color(int Red, int Green, int Blue) => (Red<<16) | (Green<<8) | Blue;
 }

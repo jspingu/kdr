@@ -3,16 +3,19 @@ using static System.MathF;
 using static MathUtil;
 using System.Numerics;
 using System.Runtime.InteropServices;
+
 public class Canvas
 {
     int[] DiffuseBuffer;
-    int Width, Height, Length;
+    int Width, Height, Length, Pitch;
 
     public Canvas(int Width, int Height)
     {
         this.Width = Width;
         this.Height = Height;
         this.Length = Width * Height;
+        this.Pitch = Width * sizeof(int);
+        
         this.DiffuseBuffer = new int[Width * Height];
     }
 
@@ -100,8 +103,7 @@ public class Canvas
 
     void Scan(int UpperBound, int LowerBound, Scanline[] Scanlines, Shader Shader)
     {
-        for (int y = Math.Clamp(UpperBound, 0, Height); y < Math.Clamp(LowerBound, 0, Height); y++)
-        {
+        Parallel.For(Math.Clamp(UpperBound, 0, Height), Math.Clamp(LowerBound, 0, Height), (y) => {
             Scanline CurrentScan = Scanlines[y - UpperBound];
             int Offset = y * Width;
             
@@ -109,12 +111,20 @@ public class Canvas
             {
                 DiffuseBuffer[Offset + x] = Shader.Compute(x, y);
             }
-        }
+        });
     }
 
     public void Clear() => Array.Clear(DiffuseBuffer);
 
     public unsafe void PushToSurface(IntPtr Surface) => Marshal.Copy(DiffuseBuffer, 0, ((SDL_Surface*)Surface)->pixels, Length);
+
+    public unsafe void UploadToSDLTexture(IntPtr Texture)
+    {
+        fixed(void* BufferPtr = &DiffuseBuffer[0])
+        {
+            SDL_UpdateTexture(Texture, 0, (IntPtr)BufferPtr, Pitch);
+        }
+    }
 }
 
 public struct Scanline

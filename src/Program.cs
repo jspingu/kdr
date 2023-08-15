@@ -1,25 +1,47 @@
 ﻿using static SDL2.SDL;
 using System.Numerics;
-public class Program
+public static class Program
 {
+	static int RenderWidth = 960;
+	static int RenderHeight = 540;
 	public static void Main()
 	{
 		SDL_Init(SDL_INIT_VIDEO);
 
-		IntPtr window = SDL_CreateWindow(
+		IntPtr SDLWindow = SDL_CreateWindow(
 			"Title",
 			SDL_WINDOWPOS_CENTERED,
 			SDL_WINDOWPOS_CENTERED,
-			1280,
-			720,
+			RenderWidth,
+			RenderHeight,
 			SDL_WindowFlags.SDL_WINDOW_RESIZABLE
 		);
 
-		IntPtr ScreenSurface = SDL_GetWindowSurface(window);
-		Canvas MyCanvas = new Canvas(1280, 720);
+		IntPtr SDLRenderer = SDL_CreateRenderer(SDLWindow, -1, SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
 		
-		Primitive MyPrim = new Primitive(new Vector2(640, 260), new Vector2(-200, 200), new Vector2(200, 200));
+		IntPtr SDLTexture = SDL_CreateTexture(
+			SDLRenderer, 
+			SDL_PIXELFORMAT_XRGB888, 
+			(int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING, 
+			RenderWidth, 
+			RenderHeight
+		);
+
+		SDL_RenderSetLogicalSize(SDLRenderer, RenderWidth, RenderHeight);
+
+		Canvas MyCanvas = new Canvas(RenderWidth, RenderHeight);
+
+		Primitive MyPrim = new Primitive(new Vector2(0, 0), new Vector2(RenderWidth, 0), new Vector2(0, RenderHeight));
 		RGBTriangle Rainbow = new RGBTriangle(MyPrim);
+
+		Primitive MyPrim2 = new Primitive(new Vector2(RenderWidth, RenderHeight), new Vector2(0, -RenderHeight), new Vector2(-RenderWidth, 0));
+		RGBTriangle Rainbow2 = new RGBTriangle(MyPrim2);
+
+		ColorFill Blue = new ColorFill(756145);
+		ColorFill Black = new ColorFill(0);
+
+		IntPtr Cat = SDL_LoadBMP("images/cat.bmp");
+		AffineTextureMap CatShader = new AffineTextureMap(Cat, MyPrim);
 
 		SDL_Event e;
 		bool quit = false;
@@ -28,15 +50,10 @@ public class Program
 
 		Queue<double> FrametimeQueue = new Queue<double>();
 
-		float Time = 0;
-		float Angle = 0;
-
 		while (!quit)
 		{
 			double TimeDelta = (double) (SDL_GetPerformanceCounter() - CountOld) / SDL_GetPerformanceFrequency();
 			CountOld = SDL_GetPerformanceCounter();
-
-			Time += (float) TimeDelta;
 
 			FrametimeQueue.Enqueue(TimeDelta);
 			if (FrametimeQueue.Count > 256) FrametimeQueue.Dequeue();
@@ -61,20 +78,6 @@ public class Program
 
 								double AvgFrametime = total/256;
 								Console.WriteLine($"Avg frametime over 256 frames: {AvgFrametime * 1000}ms ({1/AvgFrametime}FPS)");
-								
-								break;
-
-							case SDL_Scancode.SDL_SCANCODE_LEFT:
-								Angle += 0.01f;
-								break;
-
-							case SDL_Scancode.SDL_SCANCODE_RIGHT:
-								Angle -= 0.01f;
-								break;
-
-							case SDL_Scancode.SDL_SCANCODE_T:
-								Console.WriteLine(MyPrim.a);
-								Console.WriteLine(MyPrim.b);
 								break;
 						}
 
@@ -82,16 +85,22 @@ public class Program
 				}
 			}
 
-			MyPrim.a = new Vector2(-200, 200) * MathF.Cos(Angle) + new Vector2(200, 200) * MathF.Sin(Angle);
-
 			MyCanvas.Clear();
-			Rainbow.Prim = MyPrim;
-			MyCanvas.DrawPrimitive(MyPrim, Rainbow);
-			MyCanvas.PushToSurface(ScreenSurface);
-			SDL_UpdateWindowSurface(window);
+			
+			MyCanvas.DrawPrimitive(MyPrim, CatShader);
+			MyCanvas.DrawPrimitive(MyPrim2, Rainbow2);
+			
+			MyCanvas.UploadToSDLTexture(SDLTexture);
+
+			SDL_RenderClear(SDLRenderer);
+			SDL_RenderCopy(SDLRenderer, SDLTexture, 0, 0);
+			SDL_RenderPresent(SDLRenderer);
 		}
 
-		SDL_DestroyWindow(window);
+		SDL_DestroyWindow(SDLWindow);
+		SDL_DestroyRenderer(SDLRenderer);
+		SDL_DestroyTexture(SDLTexture);
+		
 		SDL_Quit();
 	}
 }
