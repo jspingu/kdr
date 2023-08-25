@@ -1,5 +1,4 @@
 using System.Numerics;
-using static System.MathF;
 
 public struct Transform3
 {
@@ -19,9 +18,7 @@ public struct Transform3
 
 public struct Basis3
 {
-	public Vector3 i;
-	public Vector3 j;
-	public Vector3 k;
+	public Vector3 i, j, k;
 	
 	public static readonly Basis3 Identity = new Basis3(Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
 
@@ -46,15 +43,4 @@ public struct Basis3
 	}
 
 	public override string ToString() => $"{i}, {j}, {k}";
-}
-
-public static class VectorUtil
-{
-	public static Vector3 Rotated(this Vector3 Vector, Vector3 Axis, float Angle)
-	{
-		Vector3 AxisProjection = Vector3.Dot(Vector, Axis) * Axis;
-		Vector3 AxisPerpendicular = Vector - AxisProjection;
-		
-		return AxisProjection + Cos(Angle) * AxisPerpendicular + Sin(Angle) * Vector3.Cross(Axis, AxisPerpendicular);
-	}
 }

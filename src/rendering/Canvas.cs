@@ -1,6 +1,7 @@
 using static SDL2.SDL;
 using static System.MathF;
 using static MathUtil;
+using static ShaderUtil;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
@@ -9,40 +10,53 @@ public class Canvas
     int[] DiffuseBuffer;
     int Width, Height, Length, Pitch;
 
+    Vector2 Midpoint;
+
     public Canvas(int Width, int Height)
     {
         this.Width = Width;
         this.Height = Height;
         this.Length = Width * Height;
         this.Pitch = Width * sizeof(int);
+
+        this.Midpoint = new Vector2(Width, Height) / 2f;
         
         this.DiffuseBuffer = new int[Width * Height];
     }
 
-    public void DrawPrimitive(Primitive Prim, Shader Shader)
+    public void DrawSpatialPrimitive(SpatialPrimitive ViewTriangle, Shader Shader)
     {
-        Vector2 CWNormal = new Vector2(-Prim.a.Y, Prim.a.X);
-        float AFirst = Vector2.Dot(Prim.b, CWNormal);
+        // Orthogonal projection, no near plane clipping
+        Primitive ScreenTriangle = new Primitive(
+            ViewTriangle.v1.Position.ToVector2() + Midpoint,
+            ViewTriangle.v2.Position.ToVector2() + Midpoint,
+            ViewTriangle.v3.Position.ToVector2() + Midpoint
+        );
 
-        if (AFirst == 0) return;
+        Vector2 AToB = ScreenTriangle.b - ScreenTriangle.a;
+        Vector2 AToC = ScreenTriangle.c - ScreenTriangle.a;
 
-        Vector2 First, Second;
+        float AToBFirst = Vector2.Dot(AToB.ClockwiseNormal(), AToC);
 
-        if(AFirst > 0)
+        if (AToBFirst == 0) return; // Triangle sides are parallel
+
+        Vector2 SecondVertex, ThirdVertex;
+
+        if(AToBFirst > 0)
         {
-            First = Prim.a;
-            Second = Prim.b;
+            SecondVertex = ScreenTriangle.b;
+            ThirdVertex = ScreenTriangle.c;
         }
         else
         {
-            First = Prim.b;
-            Second = Prim.a;
+            SecondVertex = ScreenTriangle.c;
+            ThirdVertex = ScreenTriangle.b;
         }
 
-        Vector2[] ClockwiseVertices = new Vector2[] {Prim.Origin, Prim.Origin + First, Prim.Origin + Second, Prim.Origin};
+        Vector2[] ClockwiseVertices = new Vector2[] {ScreenTriangle.a, SecondVertex, ThirdVertex, ScreenTriangle.a};
 
-        float PrimMinY = Prim.Origin.Y + Min(Min(Prim.a.Y, 0), Prim.b.Y);
-        float PrimMaxY = Prim.Origin.Y + Max(Max(Prim.a.Y, 0), Prim.b.Y);
+        float PrimMinY = ScreenTriangle.a.Y + Min(Min(AToB.Y, 0), AToC.Y);
+        float PrimMaxY = ScreenTriangle.a.Y + Max(Max(AToB.Y, 0), AToC.Y);
 
         int PrimUpperBound = iRound(PrimMinY, false);
         int PrimLowerBound = iRound(PrimMaxY, false);
@@ -57,10 +71,10 @@ public class Canvas
             Trace(TraceStart, TraceEnd, PrimUpperBound, TraceHasLowest, Scanlines);
         }
 
-        Scan(PrimUpperBound, PrimLowerBound, Scanlines, Shader);
+        Scan(PrimUpperBound, PrimLowerBound, Scanlines, ViewTriangle, new Transform2(new Basis2(AToB, AToC), ScreenTriangle.a), Shader);
     }
 
-    void Trace(Vector2 Start, Vector2 End, int PrimUpperBound, bool HasLowest, Scanline[] Scanlines)
+    static void Trace(Vector2 Start, Vector2 End, int PrimUpperBound, bool HasLowest, Scanline[] Scanlines)
     {
         Vector2 TracePath = End - Start;
 
@@ -101,15 +115,63 @@ public class Canvas
         }
     }
 
-    void Scan(int UpperBound, int LowerBound, Scanline[] Scanlines, Shader Shader)
+    void Scan(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Transform2 TriangleTransform, Shader Shader)
     {
+        Vector2 iNormal = TriangleTransform.Basis.i.ClockwiseNormal();
+        Vector2 jNormal = TriangleTransform.Basis.j.ClockwiseNormal();
+
+        float DivAB = 1 / Vector2.Dot(-TriangleTransform.Basis.i, jNormal);
+        float DivAC = 1 / Vector2.Dot(-TriangleTransform.Basis.j, iNormal);
+
+        Basis2 InverseTransform = new Basis2(
+            new Vector2(
+                jNormal.X * DivAB,
+                iNormal.X * DivAC
+            ),
+            new Vector2(
+                jNormal.Y * DivAB,
+                iNormal.Y * DivAC
+            )
+        );
+
         Parallel.For(Math.Clamp(UpperBound, 0, Height), Math.Clamp(LowerBound, 0, Height), (y) => {
             Scanline CurrentScan = Scanlines[y - UpperBound];
             int Offset = y * Width;
             
             for (int x = Math.Clamp(CurrentScan.LeftBound, 0, Width); x < Math.Clamp(CurrentScan.RightBound, 0, Width); x++)
             {
-                DiffuseBuffer[Offset + x] = Shader.Compute(x, y);
+                Vector2 TriangleOffset = TriangleTransform.Translation - (new Vector2(x, y) + new Vector2(0.5f, 0.5f));
+                Vector2 AffineCoordinates = InverseTransform * TriangleOffset;
+
+                Vector3 BarycentricWeights = new Vector3(
+                    1 - AffineCoordinates.X - AffineCoordinates.Y,
+                    AffineCoordinates.X,
+                    AffineCoordinates.Y
+                );
+
+                float FragmentDepth = WeighBarycentric(
+                    BarycentricWeights, 
+                    ViewTriangle.v1.Position.Z, 
+                    ViewTriangle.v2.Position.Z, 
+                    ViewTriangle.v3.Position.Z
+                );
+
+                Vector2 FragmentTexCoord = WeighBarycentric(
+                    BarycentricWeights, 
+                    ViewTriangle.v1.TexCoord, 
+                    ViewTriangle.v2.TexCoord, 
+                    ViewTriangle.v3.TexCoord
+                );
+
+                ShaderParam Fragment = new ShaderParam(
+                    x, y,
+                    BarycentricWeights,
+                    FragmentDepth,
+                    FragmentTexCoord,
+                    ViewTriangle.Normal
+                );
+
+                DiffuseBuffer[Offset + x] = Shader.Compute(Fragment);
             }
         });
     }

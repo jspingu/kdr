@@ -1,9 +1,11 @@
 ﻿using static SDL2.SDL;
 using System.Numerics;
+
 public static class Program
 {
-	static int RenderWidth = 960;
-	static int RenderHeight = 540;
+	static readonly int RenderWidth = 960;
+	static readonly int RenderHeight = 540;
+
 	public static void Main()
 	{
 		SDL_Init(SDL_INIT_VIDEO);
@@ -31,23 +33,19 @@ public static class Program
 
 		Canvas MyCanvas = new Canvas(RenderWidth, RenderHeight);
 
-		Primitive MyPrim = new Primitive(new Vector2(0, 0), new Vector2(RenderWidth, 0), new Vector2(0, RenderHeight));
-		RGBTriangle Rainbow = new RGBTriangle(MyPrim);
+		SpatialPrimitive test = new SpatialPrimitive(
+			new Vertex(new Vector3(0, -100, 0), Vector2.Zero),
+			new Vertex(new Vector3(-100, 100, 0), Vector2.Zero),
+			new Vertex(new Vector3(100, 100, 0), Vector2.Zero),
+			Vector3.Zero
+		);
 
-		Primitive MyPrim2 = new Primitive(new Vector2(RenderWidth, RenderHeight), new Vector2(0, -RenderHeight), new Vector2(-RenderWidth, 0));
-		RGBTriangle Rainbow2 = new RGBTriangle(MyPrim2);
-
-		ColorFill Blue = new ColorFill(756145);
-		ColorFill Black = new ColorFill(0);
-
-		IntPtr Cat = SDL_LoadBMP("images/cat.bmp");
-		AffineTextureMap CatShader = new AffineTextureMap(Cat, MyPrim);
-
+		Shader Rainbow = new Hello();
+		
 		SDL_Event e;
 		bool quit = false;
 
 		ulong CountOld = SDL_GetPerformanceCounter();
-
 		Queue<double> FrametimeQueue = new Queue<double>();
 
 		while (!quit)
@@ -86,9 +84,8 @@ public static class Program
 			}
 
 			MyCanvas.Clear();
-			
-			MyCanvas.DrawPrimitive(MyPrim, CatShader);
-			MyCanvas.DrawPrimitive(MyPrim2, Rainbow2);
+
+			MyCanvas.DrawSpatialPrimitive(test, Rainbow);
 			
 			MyCanvas.UploadToSDLTexture(SDLTexture);
 

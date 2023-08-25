@@ -4,21 +4,14 @@ using System.Numerics;
 
 public static class ShaderUtil
 {
-    public static Vector2 AffineComponent(Vector2 Point, Primitive Basis)
-    {
-        float AComponent = RayLineIntersect(Point, -Basis.a, Basis.Origin, Basis.b);
-        float BComponent = RayLineIntersect(Point, -Basis.b, Basis.Origin, Basis.a); 
+    public static float WeighBarycentric(Vector3 Weights, float Property1, float Property2, float Property3)
+        => Vector3.Dot(Weights, new Vector3(Property1, Property2, Property3));
 
-        return new Vector2(AComponent, BComponent);
+    public static Vector2 WeighBarycentric(Vector3 Weights, Vector2 Property1, Vector2 Property2, Vector2 Property3)
+        => Weights.X * Property1 + Weights.Y * Property2 + Weights.Z * Property3;
 
-        float RayLineIntersect(Vector2 RayOrigin, Vector2 RayDir, Vector2 LineOrigin, Vector2 LineDir)
-        {
-            Vector2 LineNormal = new Vector2(-LineDir.Y, LineDir.X);
-            Vector2 RayDisplacement = RayOrigin - LineOrigin;
-
-            return Vector2.Dot(-RayDisplacement, LineNormal) / Vector2.Dot(RayDir, LineNormal);
-        }
-    }
+    public static Vector3 WeighBarycentric(Vector3 Weights, Vector3 Property1, Vector3 Property2, Vector3 Property3)
+        => Weights.X * Property1 + Weights.Y * Property2 + Weights.Z * Property3;
 
     public static unsafe int NearestTexel(Vector2 TexCoord, IntPtr Texture)
     {
