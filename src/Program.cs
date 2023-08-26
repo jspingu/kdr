@@ -31,24 +31,20 @@ public static class Program
 
 		SDL_RenderSetLogicalSize(SDLRenderer, RenderWidth, RenderHeight);
 
-		Canvas MyCanvas = new Canvas(RenderWidth, RenderHeight);
-
-		SpatialPrimitive test = new SpatialPrimitive(
-			new Vertex(new Vector3(0, -100, 0), Vector2.Zero),
-			new Vertex(new Vector3(-100, 100, 0), Vector2.Zero),
-			new Vertex(new Vector3(100, 100, 0), Vector2.Zero),
-			Vector3.Zero
-		);
-
-		Shader Rainbow = new Hello();
-		
-		SDL_Event e;
-		bool quit = false;
-
 		ulong CountOld = SDL_GetPerformanceCounter();
-		Queue<double> FrametimeQueue = new Queue<double>();
+		Queue<double> FrametimeQueue = new();
 
-		while (!quit)
+        bool quit = false;
+
+		Canvas MyCanvas = new(RenderWidth, RenderHeight);
+
+		MeshBuilder.BuildFromFile("assets/cube.mesh", out Vector3[] Vertices, out Vector2[] TextureVertices, out IndexedFace[] Faces);
+		Shader TextureMap = new TextureMap(SDL_LoadBMP("images/wood.bmp"));
+		Shader Normal = new Normal();
+
+		Mesh Cube = new(Vertices, TextureVertices, Faces, TextureMap);
+
+        while (!quit)
 		{
 			double TimeDelta = (double) (SDL_GetPerformanceCounter() - CountOld) / SDL_GetPerformanceFrequency();
 			CountOld = SDL_GetPerformanceCounter();
@@ -56,7 +52,7 @@ public static class Program
 			FrametimeQueue.Enqueue(TimeDelta);
 			if (FrametimeQueue.Count > 256) FrametimeQueue.Dequeue();
 
-			while (SDL_PollEvent(out e) != 0)
+			while (SDL_PollEvent(out SDL_Event e) != 0)
 			{
 				switch (e.type)
 				{
@@ -85,7 +81,8 @@ public static class Program
 
 			MyCanvas.Clear();
 
-			MyCanvas.DrawSpatialPrimitive(test, Rainbow);
+			Cube.Transform.Basis = Cube.Transform.Basis.Rotated(Vector3.Normalize(Vector3.One), (float)TimeDelta);
+			Cube.Render(MyCanvas, new Transform3(Basis3.Identity, Vector3.Zero));
 			
 			MyCanvas.UploadToSDLTexture(SDLTexture);
 

@@ -26,6 +26,8 @@ public class Canvas
 
     public void DrawSpatialPrimitive(SpatialPrimitive ViewTriangle, Shader Shader)
     {
+        if (ViewTriangle.Normal.Z > 0) return;
+
         // Orthogonal projection, no near plane clipping
         Primitive ScreenTriangle = new Primitive(
             ViewTriangle.v1.Position.ToVector2() + Midpoint,
