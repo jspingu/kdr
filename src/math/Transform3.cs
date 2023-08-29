@@ -11,9 +11,9 @@ public struct Transform3
 		this.Translation = Translation;
 	}
 
-	public Vector3 AppliedTo(Vector3 Vector) => Basis * Vector + Translation;
+	public readonly Vector3 AppliedTo(Vector3 Vector) => Basis * Vector + Translation;
 
-	public Transform3 AppliedTo(Transform3 Transform) => new Transform3(Basis * Transform.Basis, Translation + Transform.Translation);
+	public readonly Transform3 AppliedTo(Transform3 Transform) => new Transform3(Basis * Transform.Basis, Translation + Transform.Translation);
 }
 
 public struct Basis3
@@ -31,9 +31,9 @@ public struct Basis3
 
 	public static Vector3 operator *(Basis3 Basis, Vector3 Vector) => Vector.X * Basis.i + Vector.Y * Basis.j + Vector.Z * Basis.k;
 
-	public static Basis3 operator *(Basis3 Basis1, Basis3 Basis2) => new Basis3(Basis1 * Basis2.i, Basis1 * Basis2.j, Basis1 * Basis2.k);
+	public static Basis3 operator *(Basis3 First, Basis3 Second) => new Basis3(First * Second.i, First * Second.j, First * Second.k);
 
-	public Basis3 Rotated(Vector3 Axis, float Angle)
+	public readonly Basis3 Rotated(Vector3 Axis, float Angle)
 	{
 		return new Basis3(
 			i.Rotated(Axis, Angle),
@@ -42,5 +42,5 @@ public struct Basis3
 		);
 	}
 
-	public override string ToString() => $"{i}, {j}, {k}";
+	public override readonly string ToString() => $"{i}, {j}, {k}";
 }

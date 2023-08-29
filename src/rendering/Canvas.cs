@@ -119,22 +119,7 @@ public class Canvas
 
     void Scan(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Transform2 TriangleTransform, Shader Shader)
     {
-        Vector2 iNormal = TriangleTransform.Basis.i.ClockwiseNormal();
-        Vector2 jNormal = TriangleTransform.Basis.j.ClockwiseNormal();
-
-        float DivAB = 1 / Vector2.Dot(-TriangleTransform.Basis.i, jNormal);
-        float DivAC = 1 / Vector2.Dot(-TriangleTransform.Basis.j, iNormal);
-
-        Basis2 InverseTransform = new Basis2(
-            new Vector2(
-                jNormal.X * DivAB,
-                iNormal.X * DivAC
-            ),
-            new Vector2(
-                jNormal.Y * DivAB,
-                iNormal.Y * DivAC
-            )
-        );
+        Basis2 InverseTransform = TriangleTransform.Basis.Inversed();
 
         Parallel.For(Math.Clamp(UpperBound, 0, Height), Math.Clamp(LowerBound, 0, Height), (y) => {
             Scanline CurrentScan = Scanlines[y - UpperBound];
@@ -142,7 +127,7 @@ public class Canvas
             
             for (int x = Math.Clamp(CurrentScan.LeftBound, 0, Width); x < Math.Clamp(CurrentScan.RightBound, 0, Width); x++)
             {
-                Vector2 TriangleOffset = TriangleTransform.Translation - (new Vector2(x, y) + new Vector2(0.5f, 0.5f));
+                Vector2 TriangleOffset = new Vector2(x, y) + new Vector2(0.5f, 0.5f) - TriangleTransform.Translation;
                 Vector2 AffineCoordinates = InverseTransform * TriangleOffset;
 
                 Vector3 BarycentricWeights = new Vector3(

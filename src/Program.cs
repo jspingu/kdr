@@ -40,7 +40,6 @@ public static class Program
 
 		MeshBuilder.BuildFromFile("assets/cube.mesh", out Vector3[] Vertices, out Vector2[] TextureVertices, out IndexedFace[] Faces);
 		Shader TextureMap = new TextureMap(SDL_LoadBMP("images/wood.bmp"));
-		Shader Normal = new Normal();
 
 		Mesh Cube = new(Vertices, TextureVertices, Faces, TextureMap);
 

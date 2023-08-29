@@ -1,6 +1,5 @@
 using System.Numerics;
 using static ShaderUtil;
-using static MathUtil;
 
 public interface Shader
 {
@@ -36,13 +35,9 @@ public class Hello : Shader
     }
 }
 
-public class Normal : Shader
+public class SimpleLight : Shader
 {
-    public int Compute(ShaderParam Fragment)
-    {
-        Vector3 Col = 255 * Fragment.Normal;
-        return Color((byte)Col.X, (byte)Col.Y, (byte)Col.Z);
-    }
+    public int Compute(ShaderParam Fragment) => Color(new Vector3(-Fragment.Normal.Z * 0.5f + 0.5f) * 255);
 }
 
 public class TextureMap : Shader
