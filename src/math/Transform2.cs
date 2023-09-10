@@ -30,6 +30,8 @@ public struct Basis2
 
     public static Vector2 operator *(Basis2 Basis, Vector2 Vector) => Vector.X * Basis.i + Vector.Y * Basis.j;
 
+    public static Vector2 operator *(Vector2 Vector, Basis2 Basis) => new Vector2(Vector2.Dot(Basis.i, Vector), Vector2.Dot(Basis.j, Vector));
+
     public static Basis2 operator *(Basis2 First, Basis2 Second) => new Basis2(First * Second.i, First * Second.j);
 
     public static Basis2 operator /(Basis2 Basis, float Divisor) => new Basis2(Basis.i / Divisor, Basis.j / Divisor);

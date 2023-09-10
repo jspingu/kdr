@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 public static partial class MeshBuilder
 {
-	public static void BuildFromFile(string Path, out Vector3[] Vertices, out Vector2[] TextureVertices, out IndexedFace[] Faces)
+	public static Mesh BuildFromFile(string Path)
 	{
         List<Vector3> VertexList = new();
         List<Vector2> TextureList = new();
@@ -100,9 +100,7 @@ public static partial class MeshBuilder
             }
         }
 
-        Vertices = VertexList.ToArray();
-        TextureVertices = TextureList.ToArray();
-        Faces = FaceList.ToArray();
+        return new Mesh(VertexList.ToArray(), TextureList.ToArray(), FaceList.ToArray());
     }
 
 	static Vector2 StringArrayToVec2(string[] Arr) => new(

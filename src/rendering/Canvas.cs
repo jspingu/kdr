@@ -1,14 +1,17 @@
 using static SDL2.SDL;
 using static System.MathF;
 using static MathUtil;
-using static ShaderUtil;
 using System.Numerics;
 using System.Runtime.InteropServices;
 
 public class Canvas
 {
-    int[] DiffuseBuffer;
+    int[] OutputBuffer;
+    float[] DepthBuffer;
+
     int Width, Height, Length, Pitch;
+
+    float TanHalfFOV, ScreenToProjectionPlane;
 
     Vector2 Midpoint;
 
@@ -20,20 +23,30 @@ public class Canvas
         this.Pitch = Width * sizeof(int);
 
         this.Midpoint = new Vector2(Width, Height) / 2f;
+
+        this.TanHalfFOV = Tan(PI/4f);
+        this.ScreenToProjectionPlane = TanHalfFOV / Midpoint.X;
         
-        this.DiffuseBuffer = new int[Width * Height];
+        this.OutputBuffer = new int[Width * Height];
+        this.DepthBuffer = new float[Width * Height];
     }
 
-    public void DrawSpatialPrimitive(SpatialPrimitive ViewTriangle, Shader Shader)
+    public void DrawSpatialPrimitive<TShader>(SpatialPrimitive ViewTriangle, TShader Shader) where TShader : struct, IShader
     {
         if (ViewTriangle.Normal.Z > 0) return;
 
-        // Orthogonal projection, no near plane clipping
         Primitive ScreenTriangle = new Primitive(
-            ViewTriangle.v1.Position.ToVector2() + Midpoint,
-            ViewTriangle.v2.Position.ToVector2() + Midpoint,
-            ViewTriangle.v3.Position.ToVector2() + Midpoint
+            ViewTriangle.v1.Position.ToVector2() / (ViewTriangle.v1.Position.Z * TanHalfFOV) * Midpoint.X + Midpoint,
+            ViewTriangle.v2.Position.ToVector2() / (ViewTriangle.v2.Position.Z * TanHalfFOV) * Midpoint.X + Midpoint,
+            ViewTriangle.v3.Position.ToVector2() / (ViewTriangle.v3.Position.Z * TanHalfFOV) * Midpoint.X + Midpoint
         );
+
+        // Orthogonal projection, no near plane clipping
+        // Primitive ScreenTriangle = new Primitive(
+        //     ViewTriangle.v1.Position.ToVector2() + Midpoint,
+        //     ViewTriangle.v2.Position.ToVector2() + Midpoint,
+        //     ViewTriangle.v3.Position.ToVector2() + Midpoint
+        // );
 
         Vector2 AToB = ScreenTriangle.b - ScreenTriangle.a;
         Vector2 AToC = ScreenTriangle.c - ScreenTriangle.a;
@@ -117,59 +130,74 @@ public class Canvas
         }
     }
 
-    void Scan(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Transform2 TriangleTransform, Shader Shader)
+    void Scan<TShader>(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Transform2 TriangleTransform, TShader Shader) where TShader : struct, IShader
     {
-        Basis2 InverseTransform = TriangleTransform.Basis.Inversed();
+        // Basis2 InverseTransform = TriangleTransform.Basis.Inversed();
+
+        Basis2 InverseTransform = new Basis2(
+            (ViewTriangle.v2.Position - ViewTriangle.v1.Position).ToVector2(),
+            (ViewTriangle.v3.Position - ViewTriangle.v1.Position).ToVector2()
+        ).Inversed();
+
+        Basis2 TextureTransform = new Basis2(
+            ViewTriangle.v2.TexCoord - ViewTriangle.v1.TexCoord,
+            ViewTriangle.v3.TexCoord - ViewTriangle.v1.TexCoord
+        ) * InverseTransform;
+
+        // Vector2 DepthTransform = new Vector2(
+        //     ViewTriangle.v2.Position.Z - ViewTriangle.v1.Position.Z,
+        //     ViewTriangle.v3.Position.Z - ViewTriangle.v1.Position.Z
+        // ) * InverseTransform;
 
         Parallel.For(Math.Clamp(UpperBound, 0, Height), Math.Clamp(LowerBound, 0, Height), (y) => {
             Scanline CurrentScan = Scanlines[y - UpperBound];
             int Offset = y * Width;
+
+            int ClampedLeft = Math.Clamp(CurrentScan.LeftBound, 0, Width);
+            int ClampedRight = Math.Clamp(CurrentScan.RightBound, 0, Width);
+
+            // Vector2 PixelCenter = new Vector2(ClampedLeft - 1, y) + new Vector2(0.5f, 0.5f) - TriangleTransform.Translation;
+
+            // Vector2 FragmentTexCoord = ViewTriangle.v1.TexCoord + TextureTransform * PixelCenter;
+            // float FragmentDepth = ViewTriangle.v1.Position.Z + Vector2.Dot(DepthTransform, PixelCenter);
             
-            for (int x = Math.Clamp(CurrentScan.LeftBound, 0, Width); x < Math.Clamp(CurrentScan.RightBound, 0, Width); x++)
+            for (int x = ClampedLeft; x < ClampedRight; x++)
             {
-                Vector2 TriangleOffset = new Vector2(x, y) + new Vector2(0.5f, 0.5f) - TriangleTransform.Translation;
-                Vector2 AffineCoordinates = InverseTransform * TriangleOffset;
+                // FragmentTexCoord += TextureTransform.i;
+                // FragmentDepth += DepthTransform.X;
 
-                Vector3 BarycentricWeights = new Vector3(
-                    1 - AffineCoordinates.X - AffineCoordinates.Y,
-                    AffineCoordinates.X,
-                    AffineCoordinates.Y
-                );
+                Vector2 ProjPlane = (new Vector2(x, y) + new Vector2(0.5f, 0.5f) - Midpoint) * ScreenToProjectionPlane;
+                
+                float FragmentDepth = Vector3.Dot(ViewTriangle.v1.Position, ViewTriangle.Normal) / Vector3.Dot(new Vector3(ProjPlane, 1), ViewTriangle.Normal);
 
-                float FragmentDepth = WeighBarycentric(
-                    BarycentricWeights, 
-                    ViewTriangle.v1.Position.Z, 
-                    ViewTriangle.v2.Position.Z, 
-                    ViewTriangle.v3.Position.Z
-                );
+                if (FragmentDepth > DepthBuffer[Offset + x]) continue;
+                DepthBuffer[Offset + x] = FragmentDepth;
 
-                Vector2 FragmentTexCoord = WeighBarycentric(
-                    BarycentricWeights, 
-                    ViewTriangle.v1.TexCoord, 
-                    ViewTriangle.v2.TexCoord, 
-                    ViewTriangle.v3.TexCoord
-                );
+                Vector2 FragmentTexCoord = ViewTriangle.v1.TexCoord + TextureTransform * (ProjPlane * FragmentDepth - ViewTriangle.v1.Position.ToVector2());
 
                 ShaderParam Fragment = new ShaderParam(
                     x, y,
-                    BarycentricWeights,
                     FragmentDepth,
                     FragmentTexCoord,
                     ViewTriangle.Normal
                 );
 
-                DiffuseBuffer[Offset + x] = Shader.Compute(Fragment);
+                OutputBuffer[Offset + x] = Shader.Compute(Fragment);
             }
         });
     }
 
-    public void Clear() => Array.Clear(DiffuseBuffer);
+    public void Clear()
+    {
+        Array.Clear(OutputBuffer);
+        Array.Fill(DepthBuffer, float.MaxValue);
+    }
 
-    public unsafe void PushToSurface(IntPtr Surface) => Marshal.Copy(DiffuseBuffer, 0, ((SDL_Surface*)Surface)->pixels, Length);
+    public unsafe void PushToSurface(IntPtr Surface) => Marshal.Copy(OutputBuffer, 0, ((SDL_Surface*)Surface)->pixels, Length);
 
     public unsafe void UploadToSDLTexture(IntPtr Texture)
     {
-        fixed(void* BufferPtr = &DiffuseBuffer[0])
+        fixed(void* BufferPtr = &OutputBuffer[0])
         {
             SDL_UpdateTexture(Texture, 0, (IntPtr)BufferPtr, Pitch);
         }

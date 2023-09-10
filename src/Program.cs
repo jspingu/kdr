@@ -34,14 +34,14 @@ public static class Program
 		ulong CountOld = SDL_GetPerformanceCounter();
 		Queue<double> FrametimeQueue = new();
 
+		bool MouseCaptured = false;
+
         bool quit = false;
 
 		Canvas MyCanvas = new(RenderWidth, RenderHeight);
-
-		MeshBuilder.BuildFromFile("assets/cube.mesh", out Vector3[] Vertices, out Vector2[] TextureVertices, out IndexedFace[] Faces);
-		Shader TextureMap = new TextureMap(SDL_LoadBMP("images/wood.bmp"));
-
-		Mesh Cube = new(Vertices, TextureVertices, Faces, TextureMap);
+		
+		TextureMap CubeTexture = new(SDL_LoadBMP("images/wood.bmp"));
+		Model<TextureMap> Cube = new(MeshBuilder.BuildFromFile("assets/cube.mesh"), new(CubeTexture));
 
         while (!quit)
 		{
@@ -59,9 +59,22 @@ public static class Program
 						quit = true;
 						break;
 
+					case SDL_EventType.SDL_MOUSEMOTION:
+						if (!MouseCaptured) break;
+
+						Cube.Transform.Basis = Cube.Transform.Basis.Rotated(-Vector3.UnitY, e.motion.xrel * 0.005f);
+						Cube.Transform.Basis = Cube.Transform.Basis.Rotated(Vector3.UnitX, e.motion.yrel * 0.005f);
+						break;
+
 					case SDL_EventType.SDL_KEYDOWN:
 						switch (e.key.keysym.scancode)
 						{
+							case SDL_Scancode.SDL_SCANCODE_ESCAPE:
+								MouseCaptured = !MouseCaptured;
+								SDL_CaptureMouse((SDL_bool) Convert.ToInt32(MouseCaptured));
+								SDL_SetRelativeMouseMode((SDL_bool) Convert.ToInt32(MouseCaptured));
+								break;
+
 							case SDL_Scancode.SDL_SCANCODE_SPACE:
 								double total = 0;
 								foreach (double Frametime in FrametimeQueue)
@@ -70,7 +83,7 @@ public static class Program
 								}
 
 								double AvgFrametime = total/256;
-								Console.WriteLine($"Avg frametime over 256 frames: {AvgFrametime * 1000}ms ({1/AvgFrametime}FPS)");
+								Console.WriteLine($"{AvgFrametime * 1000}ms ({1/AvgFrametime}FPS)");
 								break;
 						}
 
@@ -80,8 +93,9 @@ public static class Program
 
 			MyCanvas.Clear();
 
-			Cube.Transform.Basis = Cube.Transform.Basis.Rotated(Vector3.Normalize(Vector3.One), (float)TimeDelta);
-			Cube.Render(MyCanvas, new Transform3(Basis3.Identity, Vector3.Zero));
+			// Cube.Transform.Basis = Cube.Transform.Basis.Rotated(Vector3.Normalize(Vector3.One), (float)TimeDelta);
+
+			Cube.Render(MyCanvas, new Transform3(Basis3.Identity, new Vector3(0, 0, 600)));
 			
 			MyCanvas.UploadToSDLTexture(SDLTexture);
 
