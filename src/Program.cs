@@ -1,5 +1,6 @@
 ﻿using static SDL2.SDL;
 using System.Numerics;
+using System.Diagnostics;
 
 public static class Program
 {
@@ -35,13 +36,14 @@ public static class Program
 		Queue<double> FrametimeQueue = new();
 
 		bool MouseCaptured = false;
-
         bool quit = false;
 
 		Canvas MyCanvas = new(RenderWidth, RenderHeight);
 		
 		TextureMap CubeTexture = new(SDL_LoadBMP("images/wood.bmp"));
 		Model<TextureMap> Cube = new(MeshBuilder.BuildFromFile("assets/cube.mesh"), new(CubeTexture));
+
+		float Distance = 300;
 
         while (!quit)
 		{
@@ -66,13 +68,25 @@ public static class Program
 						Cube.Transform.Basis = Cube.Transform.Basis.Rotated(Vector3.UnitX, e.motion.yrel * 0.005f);
 						break;
 
+					case SDL_EventType.SDL_MOUSEWHEEL:
+						Distance -= e.wheel.y * 128;
+						break;
+
+					case SDL_EventType.SDL_MOUSEBUTTONDOWN:
+						if (e.button.button == SDL_BUTTON_LEFT) MouseCaptured = true;
+						break;
+
+					case SDL_EventType.SDL_MOUSEBUTTONUP:
+						if (e.button.button == SDL_BUTTON_LEFT) MouseCaptured = false;
+						break;
+
 					case SDL_EventType.SDL_KEYDOWN:
 						switch (e.key.keysym.scancode)
 						{
 							case SDL_Scancode.SDL_SCANCODE_ESCAPE:
-								MouseCaptured = !MouseCaptured;
-								SDL_CaptureMouse((SDL_bool) Convert.ToInt32(MouseCaptured));
-								SDL_SetRelativeMouseMode((SDL_bool) Convert.ToInt32(MouseCaptured));
+								// MouseCaptured = !MouseCaptured;
+								// SDL_CaptureMouse((SDL_bool) Convert.ToInt32(MouseCaptured));
+								// SDL_SetRelativeMouseMode((SDL_bool) Convert.ToInt32(MouseCaptured));
 								break;
 
 							case SDL_Scancode.SDL_SCANCODE_SPACE:
@@ -93,9 +107,7 @@ public static class Program
 
 			MyCanvas.Clear();
 
-			// Cube.Transform.Basis = Cube.Transform.Basis.Rotated(Vector3.Normalize(Vector3.One), (float)TimeDelta);
-
-			Cube.Render(MyCanvas, new Transform3(Basis3.Identity, new Vector3(0, 0, 600)));
+			Cube.Render(MyCanvas, new Transform3(Basis3.Identity, new Vector3(0, 0, Distance)));
 			
 			MyCanvas.UploadToSDLTexture(SDLTexture);
 

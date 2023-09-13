@@ -3,6 +3,8 @@ using static System.MathF;
 using static MathUtil;
 using System.Numerics;
 using System.Runtime.InteropServices;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 
 public class Canvas
 {
@@ -73,23 +75,20 @@ public class Canvas
         float PrimMinY = ScreenTriangle.a.Y + Min(Min(AToB.Y, 0), AToC.Y);
         float PrimMaxY = ScreenTriangle.a.Y + Max(Max(AToB.Y, 0), AToC.Y);
 
-        int PrimUpperBound = iRound(PrimMinY, false);
-        int PrimLowerBound = iRound(PrimMaxY, false);
+        int PrimUpperBound = Math.Clamp(RoundTopLeft(PrimMinY), 0, Height);
+        int PrimLowerBound = Math.Clamp(RoundTopLeft(PrimMaxY), 0, Height);
 
         Scanline[] Scanlines = new Scanline[PrimLowerBound - PrimUpperBound];
 
         for (int i = 0; i < 3; i++)
         {
-            Vector2 TraceStart = ClockwiseVertices[i];
-            Vector2 TraceEnd = ClockwiseVertices[i + 1];
-            bool TraceHasLowest = TraceStart.Y == PrimMaxY || TraceEnd.Y == PrimMaxY;
-            Trace(TraceStart, TraceEnd, PrimUpperBound, TraceHasLowest, Scanlines);
+            Trace(ClockwiseVertices[i], ClockwiseVertices[i + 1], PrimUpperBound, Scanlines);
         }
 
         Scan(PrimUpperBound, PrimLowerBound, Scanlines, ViewTriangle, new Transform2(new Basis2(AToB, AToC), ScreenTriangle.a), Shader);
     }
 
-    static void Trace(Vector2 Start, Vector2 End, int PrimUpperBound, bool HasLowest, Scanline[] Scanlines)
+    void Trace(Vector2 Start, Vector2 End, int PrimUpperBound, Scanline[] Scanlines)
     {
         Vector2 TracePath = End - Start;
 
@@ -98,32 +97,32 @@ public class Canvas
         bool Upwards = TracePath.Y < 0;
 
         float SlopeX = TracePath.X / TracePath.Y;
-        float OffsetX = Start.X + Frac((Upwards ? -0.5f : 1.5f) - ModFrac(Start.Y)) * SlopeX;
-        if (ModFrac(Start.Y) == 0.5f && HasLowest && Upwards) OffsetX -= SlopeX;
 
-        int TraceUpperBound = iRound(Min(Start.Y, End.Y), false);
-        int TraceLowerBound = iRound(Max(Start.Y, End.Y), !HasLowest);
+        int TraceUpperBound = Math.Clamp(RoundTopLeft(Min(Start.Y, End.Y)), 0, Height);
+        int TraceLowerBound = Math.Clamp(RoundTopLeft(Max(Start.Y, End.Y)), 0, Height);
 
         int TraceLength = TraceLowerBound - TraceUpperBound;
 
         if (Upwards)
         {
+            float OffsetX = Start.X + (TraceLowerBound - 0.5f - Start.Y) * SlopeX;
             int ScanlineIndex = TraceLowerBound - PrimUpperBound - 1;
 
             for (int i = 0; i < TraceLength; i++)
             {
-                Scanlines[ScanlineIndex].LeftBound = iRound(OffsetX, false);
+                Scanlines[ScanlineIndex].LeftBound = Math.Clamp(RoundTopLeft(OffsetX), 0, Width);
                 OffsetX -= SlopeX;
                 ScanlineIndex--;
             }
         }
         else
         {
+            float OffsetX = Start.X + (TraceUpperBound + 0.5f - Start.Y) * SlopeX;
             int ScanlineIndex = TraceUpperBound - PrimUpperBound;
 
             for (int i = 0; i < TraceLength; i++)
             {
-                Scanlines[ScanlineIndex].RightBound = iRound(OffsetX, false);
+                Scanlines[ScanlineIndex].RightBound = Math.Clamp(RoundTopLeft(OffsetX), 0, Width);
                 OffsetX += SlopeX;
                 ScanlineIndex++;
             }
@@ -132,8 +131,6 @@ public class Canvas
 
     void Scan<TShader>(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Transform2 TriangleTransform, TShader Shader) where TShader : struct, IShader
     {
-        // Basis2 InverseTransform = TriangleTransform.Basis.Inversed();
-
         Basis2 InverseTransform = new Basis2(
             (ViewTriangle.v2.Position - ViewTriangle.v1.Position).ToVector2(),
             (ViewTriangle.v3.Position - ViewTriangle.v1.Position).ToVector2()
@@ -144,36 +141,65 @@ public class Canvas
             ViewTriangle.v3.TexCoord - ViewTriangle.v1.TexCoord
         ) * InverseTransform;
 
-        // Vector2 DepthTransform = new Vector2(
-        //     ViewTriangle.v2.Position.Z - ViewTriangle.v1.Position.Z,
-        //     ViewTriangle.v3.Position.Z - ViewTriangle.v1.Position.Z
-        // ) * InverseTransform;
+        float NormalDisplacement = Vector3.Dot(ViewTriangle.v1.Position, ViewTriangle.Normal);
 
-        Parallel.For(Math.Clamp(UpperBound, 0, Height), Math.Clamp(LowerBound, 0, Height), (y) => {
+        Parallel.For(UpperBound, LowerBound, (y) => {
             Scanline CurrentScan = Scanlines[y - UpperBound];
             int Offset = y * Width;
-
-            int ClampedLeft = Math.Clamp(CurrentScan.LeftBound, 0, Width);
-            int ClampedRight = Math.Clamp(CurrentScan.RightBound, 0, Width);
-
-            // Vector2 PixelCenter = new Vector2(ClampedLeft - 1, y) + new Vector2(0.5f, 0.5f) - TriangleTransform.Translation;
-
-            // Vector2 FragmentTexCoord = ViewTriangle.v1.TexCoord + TextureTransform * PixelCenter;
-            // float FragmentDepth = ViewTriangle.v1.Position.Z + Vector2.Dot(DepthTransform, PixelCenter);
             
-            for (int x = ClampedLeft; x < ClampedRight; x++)
+            for (int x = CurrentScan.LeftBound; x < CurrentScan.RightBound; x++)
             {
-                // FragmentTexCoord += TextureTransform.i;
-                // FragmentDepth += DepthTransform.X;
-
                 Vector2 ProjPlane = (new Vector2(x, y) + new Vector2(0.5f, 0.5f) - Midpoint) * ScreenToProjectionPlane;
-                
-                float FragmentDepth = Vector3.Dot(ViewTriangle.v1.Position, ViewTriangle.Normal) / Vector3.Dot(new Vector3(ProjPlane, 1), ViewTriangle.Normal);
+
+                float FragmentDepth = NormalDisplacement / Vector3.Dot(new Vector3(ProjPlane, 1), ViewTriangle.Normal);
 
                 if (FragmentDepth > DepthBuffer[Offset + x]) continue;
                 DepthBuffer[Offset + x] = FragmentDepth;
 
                 Vector2 FragmentTexCoord = ViewTriangle.v1.TexCoord + TextureTransform * (ProjPlane * FragmentDepth - ViewTriangle.v1.Position.ToVector2());
+
+                ShaderParam Fragment = new ShaderParam(
+                    x, y,
+                    FragmentDepth,
+                    FragmentTexCoord,
+                    ViewTriangle.Normal
+                );
+
+                OutputBuffer[Offset + x] = Shader.Compute(Fragment);
+            }
+        });
+    }
+
+    void ScanOrthographic<TShader>(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Transform2 TriangleTransform, TShader Shader) where TShader : struct, IShader
+    {
+        Basis2 InverseTransform = TriangleTransform.Basis.Inversed();
+
+        Basis2 TextureTransform = new Basis2(
+            ViewTriangle.v2.TexCoord - ViewTriangle.v1.TexCoord,
+            ViewTriangle.v3.TexCoord - ViewTriangle.v1.TexCoord
+        ) * InverseTransform;
+
+        Vector2 DepthTransform = new Vector2(
+            ViewTriangle.v2.Position.Z - ViewTriangle.v1.Position.Z,
+            ViewTriangle.v3.Position.Z - ViewTriangle.v1.Position.Z
+        ) * InverseTransform;
+
+        Parallel.For(UpperBound, LowerBound, (y) => {
+            Scanline CurrentScan = Scanlines[y - UpperBound];
+            int Offset = y * Width;
+
+            Vector2 PixelCenter = new Vector2(CurrentScan.LeftBound - 1, y) + new Vector2(0.5f, 0.5f) - TriangleTransform.Translation;
+
+            Vector2 FragmentTexCoord = ViewTriangle.v1.TexCoord + TextureTransform * PixelCenter;
+            float FragmentDepth = ViewTriangle.v1.Position.Z + Vector2.Dot(DepthTransform, PixelCenter);
+            
+            for (int x = CurrentScan.LeftBound; x < CurrentScan.RightBound; x++)
+            {
+                FragmentTexCoord += TextureTransform.i;
+                FragmentDepth += DepthTransform.X;
+
+                if (FragmentDepth > DepthBuffer[Offset + x]) continue;
+                DepthBuffer[Offset + x] = FragmentDepth;
 
                 ShaderParam Fragment = new ShaderParam(
                     x, y,
