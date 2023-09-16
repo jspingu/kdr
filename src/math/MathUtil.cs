@@ -2,14 +2,12 @@ using System.Numerics;
 using static System.MathF;
 
 public static class MathUtil
-{
-    public static unsafe int Blint(bool b) => *(byte*)&b;
-    
+{    
     public static float Frac(float f) => f - (int) f;
     
     public static float ModFrac(float f) => f - Floor(f);
 
-    public static int RoundTopLeft(float f) => (int)Floor(f) + Blint(ModFrac(f) > 0.5f);
+    public static int RoundTopLeft(float f) => (int) Ceiling(f - 0.5f);
 }
 
 public static class VectorExtensions

@@ -85,7 +85,7 @@ public class Canvas
             Trace(ClockwiseVertices[i], ClockwiseVertices[i + 1], PrimUpperBound, Scanlines);
         }
 
-        Scan(PrimUpperBound, PrimLowerBound, Scanlines, ViewTriangle, new Transform2(new Basis2(AToB, AToC), ScreenTriangle.a), Shader);
+        ScanPerspective(PrimUpperBound, PrimLowerBound, Scanlines, ViewTriangle, new Transform2(new Basis2(AToB, AToC), ScreenTriangle.a), Shader);
     }
 
     void Trace(Vector2 Start, Vector2 End, int PrimUpperBound, Scanline[] Scanlines)
@@ -129,7 +129,7 @@ public class Canvas
         }
     }
 
-    void Scan<TShader>(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Transform2 TriangleTransform, TShader Shader) where TShader : struct, IShader
+    void ScanPerspective<TShader>(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Transform2 TriangleTransform, TShader Shader) where TShader : struct, IShader
     {
         Basis2 InverseTransform = new Basis2(
             (ViewTriangle.v2.Position - ViewTriangle.v1.Position).ToVector2(),
