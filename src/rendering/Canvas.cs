@@ -3,8 +3,6 @@ using static System.MathF;
 using static MathUtil;
 using System.Numerics;
 using System.Runtime.InteropServices;
-using System.Runtime.Intrinsics;
-using System.Runtime.Intrinsics.X86;
 
 public class Canvas
 {
@@ -13,9 +11,9 @@ public class Canvas
 
     int Width, Height, Length, Pitch;
 
-    float TanHalfFOV, ScreenToProjectionPlane;
-
-    Vector2 Midpoint;
+    float TanHalfFOV;
+    
+    Vector2 Midpoint, ScreenToProjectionPlane;
 
     public Canvas(int Width, int Height)
     {
@@ -26,8 +24,8 @@ public class Canvas
 
         this.Midpoint = new Vector2(Width, Height) / 2f;
 
-        this.TanHalfFOV = Tan(PI/4f);
-        this.ScreenToProjectionPlane = TanHalfFOV / Midpoint.X;
+        this.TanHalfFOV = Tan(PI/2f / 2f);
+        this.ScreenToProjectionPlane = TanHalfFOV / Midpoint.X * new Vector2(1, -1);
         
         this.OutputBuffer = new int[Width * Height];
         this.DepthBuffer = new float[Width * Height];
@@ -94,8 +92,6 @@ public class Canvas
 
         if (TracePath.Y == 0) return;
 
-        bool Upwards = TracePath.Y < 0;
-
         float SlopeX = TracePath.X / TracePath.Y;
 
         int TraceUpperBound = Math.Clamp(RoundTopLeft(Min(Start.Y, End.Y)), 0, Height);
@@ -103,7 +99,7 @@ public class Canvas
 
         int TraceLength = TraceLowerBound - TraceUpperBound;
 
-        if (Upwards)
+        if (TracePath.Y < 0)
         {
             float OffsetX = Start.X + (TraceLowerBound - 0.5f - Start.Y) * SlopeX;
             int ScanlineIndex = TraceLowerBound - PrimUpperBound - 1;
@@ -131,14 +127,22 @@ public class Canvas
 
     void ScanPerspective<TShader>(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Transform2 TriangleTransform, TShader Shader) where TShader : struct, IShader
     {
-        Basis2 InverseTransform = new Basis2(
-            (ViewTriangle.v2.Position - ViewTriangle.v1.Position).ToVector2(),
-            (ViewTriangle.v3.Position - ViewTriangle.v1.Position).ToVector2()
-        ).Inversed();
+        Vector3 ViewAB = ViewTriangle.v2.Position - ViewTriangle.v1.Position;
+        Vector3 ViewAC = ViewTriangle.v3.Position - ViewTriangle.v1.Position;
 
-        Basis2 TextureTransform = new Basis2(
-            ViewTriangle.v2.TexCoord - ViewTriangle.v1.TexCoord,
-            ViewTriangle.v3.TexCoord - ViewTriangle.v1.TexCoord
+        Vector3 PerpAB = ViewAB.LengthSquared() * ViewAC - Vector3.Dot(ViewAC, ViewAB) * ViewAB;
+        Vector3 PerpAC = ViewAC.LengthSquared() * ViewAB - Vector3.Dot(ViewAB, ViewAC) * ViewAC;
+
+        Basis3 InverseTransform = new Basis3(
+            new(PerpAC.X, PerpAB.X, 0),
+            new(PerpAC.Y, PerpAB.Y, 0),
+            new(PerpAC.Z, PerpAB.Z, 0)
+        ) / Vector3.Dot(ViewAB, PerpAC);
+
+        Basis3 TextureTransform = new Basis3(
+            new(ViewTriangle.v2.TexCoord - ViewTriangle.v1.TexCoord, 0),
+            new(ViewTriangle.v3.TexCoord - ViewTriangle.v1.TexCoord, 0),
+            Vector3.Zero
         ) * InverseTransform;
 
         float NormalDisplacement = Vector3.Dot(ViewTriangle.v1.Position, ViewTriangle.Normal);
@@ -156,7 +160,7 @@ public class Canvas
                 if (FragmentDepth > DepthBuffer[Offset + x]) continue;
                 DepthBuffer[Offset + x] = FragmentDepth;
 
-                Vector2 FragmentTexCoord = ViewTriangle.v1.TexCoord + TextureTransform * (ProjPlane * FragmentDepth - ViewTriangle.v1.Position.ToVector2());
+                Vector2 FragmentTexCoord = ViewTriangle.v1.TexCoord + (TextureTransform * (new Vector3(ProjPlane, 1) * FragmentDepth - ViewTriangle.v1.Position)).ToVector2();
 
                 ShaderParam Fragment = new ShaderParam(
                     x, y,

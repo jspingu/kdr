@@ -1,6 +1,5 @@
 ﻿using static SDL2.SDL;
 using System.Numerics;
-using System.Diagnostics;
 
 public static class Program
 {
@@ -40,10 +39,10 @@ public static class Program
 
 		Canvas MyCanvas = new(RenderWidth, RenderHeight);
 		
-		TextureMap CubeTexture = new(SDL_LoadBMP("images/wood.bmp"));
+		TextureMap CubeTexture = new(SDL_LoadBMP("images/cubetexture.bmp"));
 		Model<TextureMap> Cube = new(MeshBuilder.BuildFromFile("assets/cube.mesh"), new(CubeTexture));
 
-		float Distance = 300;
+		float Distance = 600;
 
         while (!quit)
 		{
@@ -83,12 +82,6 @@ public static class Program
 					case SDL_EventType.SDL_KEYDOWN:
 						switch (e.key.keysym.scancode)
 						{
-							case SDL_Scancode.SDL_SCANCODE_ESCAPE:
-								// MouseCaptured = !MouseCaptured;
-								// SDL_CaptureMouse((SDL_bool) Convert.ToInt32(MouseCaptured));
-								// SDL_SetRelativeMouseMode((SDL_bool) Convert.ToInt32(MouseCaptured));
-								break;
-
 							case SDL_Scancode.SDL_SCANCODE_SPACE:
 								double total = 0;
 								foreach (double Frametime in FrametimeQueue)
@@ -107,7 +100,8 @@ public static class Program
 
 			MyCanvas.Clear();
 
-			Cube.Render(MyCanvas, new Transform3(Basis3.Identity, new Vector3(0, 0, Distance)));
+			Cube.Transform.Translation = Vector3.UnitZ * Distance;
+			Cube.Render(MyCanvas, new Transform3(Basis3.Identity, Vector3.Zero));
 			
 			MyCanvas.UploadToSDLTexture(SDLTexture);
 

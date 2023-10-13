@@ -33,6 +33,8 @@ public struct Basis3
 
 	public static Basis3 operator *(Basis3 First, Basis3 Second) => new Basis3(First * Second.i, First * Second.j, First * Second.k);
 
+	public static Basis3 operator /(Basis3 Basis, float Divisor) => new Basis3(Basis.i / Divisor, Basis.j / Divisor, Basis.k / Divisor);
+
 	public readonly Basis3 Rotated(Vector3 Axis, float Angle)
 	{
 		return new Basis3(
