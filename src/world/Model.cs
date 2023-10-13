@@ -24,9 +24,7 @@ public class Model<TShader> : Spatial where TShader : struct, IShader
             SpatialPrimitive ViewTriangle = new(
                 new Vertex(ViewSpaceVertices[Face.v1], Mesh.TextureVertices[Face.t1]),
                 new Vertex(ViewSpaceVertices[Face.v2], Mesh.TextureVertices[Face.t2]),
-                new Vertex(ViewSpaceVertices[Face.v3], Mesh.TextureVertices[Face.t3]),
-                
-                ViewTransform.Basis * Face.Normal
+                new Vertex(ViewSpaceVertices[Face.v3], Mesh.TextureVertices[Face.t3])
             );
 
             RenderTarget.DrawSpatialPrimitive(ViewTriangle, Material.Shader);

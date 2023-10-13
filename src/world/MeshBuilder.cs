@@ -67,7 +67,6 @@ public static partial class MeshBuilder
                     try
                     {
                         MatchCollection IndexMatches = CaptureIndices().Matches(Segments[1]);
-                        string[] Normal = Comma().Split(Segments[2]);
 
                         IndexedFace Face = new(
                             Convert.ToInt32(IndexMatches[0].Groups[1].Value),
@@ -76,9 +75,7 @@ public static partial class MeshBuilder
                             
                             Convert.ToInt32(IndexMatches[0].Groups[2].Value),
                             Convert.ToInt32(IndexMatches[1].Groups[2].Value),
-                            Convert.ToInt32(IndexMatches[2].Groups[2].Value),
-                            
-                            StringArrayToVec3(Normal)
+                            Convert.ToInt32(IndexMatches[2].Groups[2].Value)
                         );
 
                         FaceList.Add(Face);
@@ -86,13 +83,13 @@ public static partial class MeshBuilder
                     catch (IndexOutOfRangeException e)
                     {
                         throw new FormatException(
-                            ErrorDetail + "Indexed face format: 'f [v index]/[t index],[v index]/[t index],[v index]/[t index] [normal x],[normal y],[normal z]'."
+                            ErrorDetail + "Indexed face format: 'f [v index]/[t index],[v index]/[t index],[v index]/[t index]'."
                         , e);
                     }
                     catch (FormatException e)
                     {
                         throw new FormatException(
-                            ErrorDetail + "Vertex and texture indices must be valid integer values. Normal coordinates must be valid floating-point values."
+                            ErrorDetail + "Vertex and texture indices must be valid integer values."
                         , e);
                     }
 

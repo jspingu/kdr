@@ -11,9 +11,9 @@ public class Canvas
 
     int Width, Height, Length, Pitch;
 
-    float TanHalfFOV;
+    float TanHalfFOV, ScreenToProjectionPlane;
     
-    Vector2 Midpoint, ScreenToProjectionPlane;
+    Vector2 Midpoint;
 
     public Canvas(int Width, int Height)
     {
@@ -25,7 +25,7 @@ public class Canvas
         this.Midpoint = new Vector2(Width, Height) / 2f;
 
         this.TanHalfFOV = Tan(PI/2f / 2f);
-        this.ScreenToProjectionPlane = TanHalfFOV / Midpoint.X * new Vector2(1, -1);
+        this.ScreenToProjectionPlane = TanHalfFOV / Midpoint.X;
         
         this.OutputBuffer = new int[Width * Height];
         this.DepthBuffer = new float[Width * Height];
@@ -33,7 +33,7 @@ public class Canvas
 
     public void DrawSpatialPrimitive<TShader>(SpatialPrimitive ViewTriangle, TShader Shader) where TShader : struct, IShader
     {
-        if (ViewTriangle.Normal.Z > 0) return;
+        // if (ViewTriangle.Normal.Z > 0) return;
 
         Primitive ScreenTriangle = new Primitive(
             ViewTriangle.v1.Position.ToVector2() / (ViewTriangle.v1.Position.Z * TanHalfFOV) * Midpoint.X + Midpoint,
@@ -130,8 +130,10 @@ public class Canvas
         Vector3 ViewAB = ViewTriangle.v2.Position - ViewTriangle.v1.Position;
         Vector3 ViewAC = ViewTriangle.v3.Position - ViewTriangle.v1.Position;
 
-        Vector3 PerpAB = ViewAB.LengthSquared() * ViewAC - Vector3.Dot(ViewAC, ViewAB) * ViewAB;
-        Vector3 PerpAC = ViewAC.LengthSquared() * ViewAB - Vector3.Dot(ViewAB, ViewAC) * ViewAC;
+        Vector3 Normal = Vector3.Cross(ViewAB, ViewAC);
+
+        Vector3 PerpAB = Vector3.Cross(Normal, ViewAB);
+        Vector3 PerpAC = Vector3.Cross(ViewAC, Normal);
 
         Basis3 InverseTransform = new Basis3(
             new(PerpAC.X, PerpAB.X, 0),
@@ -145,7 +147,7 @@ public class Canvas
             Vector3.Zero
         ) * InverseTransform;
 
-        float NormalDisplacement = Vector3.Dot(ViewTriangle.v1.Position, ViewTriangle.Normal);
+        float NormalDisplacement = Vector3.Dot(ViewTriangle.v1.Position, Normal);
 
         Parallel.For(UpperBound, LowerBound, (y) => {
             Scanline CurrentScan = Scanlines[y - UpperBound];
@@ -155,7 +157,7 @@ public class Canvas
             {
                 Vector2 ProjPlane = (new Vector2(x, y) + new Vector2(0.5f, 0.5f) - Midpoint) * ScreenToProjectionPlane;
 
-                float FragmentDepth = NormalDisplacement / Vector3.Dot(new Vector3(ProjPlane, 1), ViewTriangle.Normal);
+                float FragmentDepth = NormalDisplacement / Vector3.Dot(new Vector3(ProjPlane, 1), Normal);
 
                 if (FragmentDepth > DepthBuffer[Offset + x]) continue;
                 DepthBuffer[Offset + x] = FragmentDepth;
@@ -166,7 +168,7 @@ public class Canvas
                     x, y,
                     FragmentDepth,
                     FragmentTexCoord,
-                    ViewTriangle.Normal
+                    Normal
                 );
 
                 OutputBuffer[Offset + x] = Shader.Compute(Fragment);
@@ -209,7 +211,7 @@ public class Canvas
                     x, y,
                     FragmentDepth,
                     FragmentTexCoord,
-                    ViewTriangle.Normal
+                    Vector3.Zero
                 );
 
                 OutputBuffer[Offset + x] = Shader.Compute(Fragment);
