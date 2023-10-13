@@ -1,3 +1,5 @@
+using System.Numerics;
+
 public class Model<TShader> : Spatial where TShader : struct, IShader
 {
     public Mesh Mesh;
@@ -13,12 +15,16 @@ public class Model<TShader> : Spatial where TShader : struct, IShader
     {
         ViewTransform = ViewTransform.AppliedTo(Transform);
 
+        Vector3[] ViewSpaceVertices = new Vector3[Mesh.Vertices.Length];
+
+        for(int i = 0; i < ViewSpaceVertices.Length; i++) ViewSpaceVertices[i] = ViewTransform.AppliedTo(Mesh.Vertices[i]);
+
         foreach(IndexedFace Face in Mesh.Faces)
         {
             SpatialPrimitive ViewTriangle = new(
-                new Vertex(ViewTransform.AppliedTo(Mesh.Vertices[Face.v1]), Mesh.TextureVertices[Face.t1]),
-                new Vertex(ViewTransform.AppliedTo(Mesh.Vertices[Face.v2]), Mesh.TextureVertices[Face.t2]),
-                new Vertex(ViewTransform.AppliedTo(Mesh.Vertices[Face.v3]), Mesh.TextureVertices[Face.t3]),
+                new Vertex(ViewSpaceVertices[Face.v1], Mesh.TextureVertices[Face.t1]),
+                new Vertex(ViewSpaceVertices[Face.v2], Mesh.TextureVertices[Face.t2]),
+                new Vertex(ViewSpaceVertices[Face.v3], Mesh.TextureVertices[Face.t3]),
                 
                 ViewTransform.Basis * Face.Normal
             );
