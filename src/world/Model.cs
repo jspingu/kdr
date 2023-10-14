@@ -5,25 +5,24 @@ public class Model<TShader> : Spatial where TShader : struct, IShader
     public Mesh Mesh;
     public Material<TShader> Material;
 
-    public Model(Mesh Mesh, Material<TShader> Material)
+    public Model(Mesh mesh, Material<TShader> material)
     {
-        this.Mesh = Mesh;
-        this.Material = Material;
+        Mesh = mesh;
+        Material = material;
     }
 
-    public override void Render(Rasterizer Rasterizer, Canvas RenderTarget, Transform3 ViewTransform)
+    public override void Render(Rasterizer rasterizer, Canvas renderTarget, Transform3 viewTransform)
     {
-        ViewTransform = ViewTransform.AppliedTo(Transform);
+        viewTransform = viewTransform.AppliedTo(Transform);
 
-        Vector3[] ViewSpaceVertices = new Vector3[Mesh.Vertices.Length];
+        Vector3[] viewSpaceVertices = new Vector3[Mesh.Vertices.Length];
+        for(int i = 0; i < viewSpaceVertices.Length; i++) viewSpaceVertices[i] = viewTransform.AppliedTo(Mesh.Vertices[i]);
 
-        for(int i = 0; i < ViewSpaceVertices.Length; i++) ViewSpaceVertices[i] = ViewTransform.AppliedTo(Mesh.Vertices[i]);
+        rasterizer.DrawModel(viewSpaceVertices, Mesh.TextureVertices, Mesh.Faces, renderTarget, Material.Shader);
 
-        Rasterizer.DrawModel(ViewSpaceVertices, Mesh.TextureVertices, Mesh.Faces, RenderTarget, Material.Shader);
-
-        foreach(Spatial Child in Children)
+        foreach(Spatial child in Children)
         {
-            Child.Render(Rasterizer, RenderTarget, ViewTransform);
+            child.Render(rasterizer, renderTarget, viewTransform);
         }
     }
 }

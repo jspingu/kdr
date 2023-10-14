@@ -3,40 +3,40 @@ using System.Text.RegularExpressions;
 
 public static partial class MeshBuilder
 {
-	public static Mesh BuildFromFile(string Path)
+	public static Mesh BuildFromFile(string path)
 	{
-        List<Vector3> VertexList = new();
-        List<Vector2> TextureList = new();
-        List<IndexedFace> FaceList = new();
+        List<Vector3> vertexList = new();
+        List<Vector2> textureList = new();
+        List<IndexedFace> faceList = new();
 
-        using StreamReader Reader = File.OpenText(Path);
-        int LineNumber = 0;
+        using StreamReader reader = File.OpenText(path);
+        int lineNumber = 0;
 
-        while (Reader.ReadLine() is string Line)
+        while (reader.ReadLine() is string line)
         {
-            LineNumber++;
-            string ErrorDetail = $"The input string '{Line}' at line {LineNumber} of '{Path}' was not in the correct format.\n";
+            lineNumber++;
+            string errorDetail = $"The input string '{line}' at line {lineNumber} of '{path}' was not in the correct format.\n";
 
-            string[] Segments = Space().Split(Line);
+            string[] segments = Space().Split(line);
 
-            switch (Segments[0])
+            switch (segments[0])
             {
                 case "v":
                     try
                     {
-                        string[] Coordinates = Comma().Split(Segments[1]);
-                        VertexList.Add(StringArrayToVec3(Coordinates));
+                        string[] coordinates = Comma().Split(segments[1]);
+                        vertexList.Add(StringArrayToVec3(coordinates));
                     }
                     catch (IndexOutOfRangeException e)
                     {
                         throw new FormatException(
-                            ErrorDetail + "Object-space vertex format: 'v [x],[y],[z]'."
+                            errorDetail + "Object-space vertex format: 'v [x],[y],[z]'."
                         , e);
                     }
                     catch (FormatException e)
                     {
                         throw new FormatException(
-                            ErrorDetail + "Vertex coordinate must be a valid floating-point value."
+                            errorDetail + "Vertex coordinate must be a valid floating-point value."
                         , e);
                     }
 
@@ -45,19 +45,19 @@ public static partial class MeshBuilder
                 case "t":
                     try
                     {
-                        string[] TextureCoordinates = Comma().Split(Segments[1]);
-                        TextureList.Add(StringArrayToVec2(TextureCoordinates));
+                        string[] textureCoordinates = Comma().Split(segments[1]);
+                        textureList.Add(StringArrayToVec2(textureCoordinates));
                     }
                     catch (IndexOutOfRangeException e)
                     {
                         throw new FormatException(
-                            ErrorDetail + "Texture vertex format: 't [u],[v]'."
+                            errorDetail + "Texture vertex format: 't [u],[v]'."
                         , e);
                     }
                     catch (FormatException e)
                     {
                         throw new FormatException(
-                            ErrorDetail + "Texture coordinate must be a valid floating-point value."
+                            errorDetail + "Texture coordinate must be a valid floating-point value."
                         , e);
                     }
 
@@ -66,30 +66,30 @@ public static partial class MeshBuilder
                 case "f":
                     try
                     {
-                        MatchCollection IndexMatches = CaptureIndices().Matches(Segments[1]);
+                        MatchCollection indexMatches = CaptureIndices().Matches(segments[1]);
 
                         IndexedFace Face = new(
-                            Convert.ToInt32(IndexMatches[0].Groups[1].Value),
-                            Convert.ToInt32(IndexMatches[1].Groups[1].Value),
-                            Convert.ToInt32(IndexMatches[2].Groups[1].Value),
+                            Convert.ToInt32(indexMatches[0].Groups[1].Value),
+                            Convert.ToInt32(indexMatches[1].Groups[1].Value),
+                            Convert.ToInt32(indexMatches[2].Groups[1].Value),
                             
-                            Convert.ToInt32(IndexMatches[0].Groups[2].Value),
-                            Convert.ToInt32(IndexMatches[1].Groups[2].Value),
-                            Convert.ToInt32(IndexMatches[2].Groups[2].Value)
+                            Convert.ToInt32(indexMatches[0].Groups[2].Value),
+                            Convert.ToInt32(indexMatches[1].Groups[2].Value),
+                            Convert.ToInt32(indexMatches[2].Groups[2].Value)
                         );
 
-                        FaceList.Add(Face);
+                        faceList.Add(Face);
                     }
                     catch (IndexOutOfRangeException e)
                     {
                         throw new FormatException(
-                            ErrorDetail + "Indexed face format: 'f [v index]/[t index],[v index]/[t index],[v index]/[t index]'."
+                            errorDetail + "Indexed face format: 'f [v index]/[t index],[v index]/[t index],[v index]/[t index]'."
                         , e);
                     }
                     catch (FormatException e)
                     {
                         throw new FormatException(
-                            ErrorDetail + "Vertex and texture indices must be valid integer values."
+                            errorDetail + "Vertex and texture indices must be valid integer values."
                         , e);
                     }
 
@@ -97,18 +97,18 @@ public static partial class MeshBuilder
             }
         }
 
-        return new Mesh(VertexList.ToArray(), TextureList.ToArray(), FaceList.ToArray());
+        return new Mesh(vertexList.ToArray(), textureList.ToArray(), faceList.ToArray());
     }
 
-	static Vector2 StringArrayToVec2(string[] Arr) => new(
-		Convert.ToSingle(Arr[0]),
-		Convert.ToSingle(Arr[1])
+	static Vector2 StringArrayToVec2(string[] arr) => new(
+		Convert.ToSingle(arr[0]),
+		Convert.ToSingle(arr[1])
 	);
 
-	static Vector3 StringArrayToVec3(string[] Arr) => new(
-		Convert.ToSingle(Arr[0]),
-		Convert.ToSingle(Arr[1]),
-		Convert.ToSingle(Arr[2])
+	static Vector3 StringArrayToVec3(string[] arr) => new(
+		Convert.ToSingle(arr[0]),
+		Convert.ToSingle(arr[1]),
+		Convert.ToSingle(arr[2])
 	);
 
 	[GeneratedRegex(@"\s")]

@@ -8,15 +8,16 @@ public class Canvas
 
     public readonly int Width, Height, Length, Pitch;
 
-    public Canvas(int Width, int Height)
+    public Canvas(int width, int height)
     {
-        this.Width = Width;
-        this.Height = Height;
-        this.Length = Width * Height;
-        this.Pitch = Width * sizeof(int);
+        Width = width;
+        Height = height;
         
-        this.FrameBuffer = new int[Width * Height];
-        this.DepthBuffer = new float[Width * Height];
+        Length = width * height;
+        Pitch = width * sizeof(int);
+        
+        FrameBuffer = new int[width * height];
+        DepthBuffer = new float[width * height];
     }
 
     public void Clear()
@@ -25,13 +26,13 @@ public class Canvas
         Array.Fill(DepthBuffer, float.MaxValue);
     }
 
-    public unsafe void PushToSurface(IntPtr Surface) => Marshal.Copy(FrameBuffer, 0, ((SDL_Surface*)Surface)->pixels, Length);
+    public unsafe void PushToSurface(IntPtr surface) => Marshal.Copy(FrameBuffer, 0, ((SDL_Surface*)surface)->pixels, Length);
 
-    public unsafe void UploadToSDLTexture(IntPtr Texture)
+    public unsafe void UploadToSDLTexture(IntPtr texture)
     {
         fixed(void* BufferPtr = &FrameBuffer[0])
         {
-            SDL_UpdateTexture(Texture, 0, (IntPtr)BufferPtr, Pitch);
+            SDL_UpdateTexture(texture, 0, (IntPtr)BufferPtr, Pitch);
         }
     }
 }

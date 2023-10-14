@@ -7,107 +7,107 @@ public abstract class Rasterizer
     public int Width, Height;
     public Vector2 Midpoint;
 
-    public Rasterizer(int Width, int Height)
+    public Rasterizer(int width, int height)
     {
-        this.Width = Width;
-        this.Height = Height;
+        Width = width;
+        Height = height;
 
-        Midpoint = new Vector2(Width, Height) / 2f;
+        Midpoint = new Vector2(width, height) / 2f;
     }
 
-    public void DrawModel<TShader>(Vector3[] ViewSpaceVertices, Vector2[] TextureVertices, IndexedFace[] Faces, Canvas RenderTarget, TShader Shader) where TShader : struct, IShader
+    public void DrawModel<TShader>(Vector3[] viewSpaceVertices, Vector2[] textureVertices, IndexedFace[] faces, Canvas renderTarget, TShader shader) where TShader : struct, IShader
     {
-        Vector2[] ScreenSpaceVertices = new Vector2[ViewSpaceVertices.Length];
+        Vector2[] screenSpaceVertices = new Vector2[viewSpaceVertices.Length];
 
-        for(int i = 0; i < ScreenSpaceVertices.Length; i++)
+        for(int i = 0; i < screenSpaceVertices.Length; i++)
         {
-            ScreenSpaceVertices[i] = Project(ViewSpaceVertices[i]);
+            screenSpaceVertices[i] = Project(viewSpaceVertices[i]);
         }
 
-        foreach(IndexedFace Face in Faces)
+        foreach(IndexedFace face in faces)
         {
-            Primitive ScreenTriangle = new(
-                ScreenSpaceVertices[Face.v1],
-                ScreenSpaceVertices[Face.v2],
-                ScreenSpaceVertices[Face.v3]
+            Primitive screenTriangle = new(
+                screenSpaceVertices[face.V1],
+                screenSpaceVertices[face.V2],
+                screenSpaceVertices[face.V3]
             );
 
-            SpatialPrimitive ViewTriangle = new(
-                new Vertex(ViewSpaceVertices[Face.v1], TextureVertices[Face.t1]),
-                new Vertex(ViewSpaceVertices[Face.v2], TextureVertices[Face.t2]),
-                new Vertex(ViewSpaceVertices[Face.v3], TextureVertices[Face.t3])
+            SpatialPrimitive viewTriangle = new(
+                new Vertex(viewSpaceVertices[face.V1], textureVertices[face.T1]),
+                new Vertex(viewSpaceVertices[face.V2], textureVertices[face.T2]),
+                new Vertex(viewSpaceVertices[face.V3], textureVertices[face.T3])
             );
 
-            DrawTriangle(ScreenTriangle, ViewTriangle, RenderTarget, Shader);
+            DrawTriangle(screenTriangle, viewTriangle, renderTarget, shader);
         }
     }
 
-    public void DrawTriangle<TShader>(Primitive ScreenTriangle, SpatialPrimitive ViewTriangle, Canvas RenderTarget, TShader Shader) where TShader : struct, IShader
+    public void DrawTriangle<TShader>(Primitive screenTriangle, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
     {
-        Vector2 AToB = ScreenTriangle.b - ScreenTriangle.a;
-        Vector2 AToC = ScreenTriangle.c - ScreenTriangle.a;
+        Vector2 AToB = screenTriangle.B - screenTriangle.A;
+        Vector2 AToC = screenTriangle.C - screenTriangle.A;
 
         float AToBFirst = Vector2.Dot(AToB.ClockwiseNormal(), AToC);
 
         if (AToBFirst <= 0) return; // Vertices not in clockwise order or triangle sides are parallel
 
-        float PrimMinY = ScreenTriangle.a.Y + Min(Min(AToB.Y, 0), AToC.Y);
-        float PrimMaxY = ScreenTriangle.a.Y + Max(Max(AToB.Y, 0), AToC.Y);
+        float primMinY = screenTriangle.A.Y + Min(Min(AToB.Y, 0), AToC.Y);
+        float primMaxY = screenTriangle.A.Y + Max(Max(AToB.Y, 0), AToC.Y);
 
-        int PrimUpperBound = Math.Clamp(RoundTopLeft(PrimMinY), 0, Height);
-        int PrimLowerBound = Math.Clamp(RoundTopLeft(PrimMaxY), 0, Height);
+        int primUpperBound = Math.Clamp(RoundTopLeft(primMinY), 0, Height);
+        int primLowerBound = Math.Clamp(RoundTopLeft(primMaxY), 0, Height);
 
-        Scanline[] Scanlines = new Scanline[PrimLowerBound - PrimUpperBound];
+        Scanline[] scanlines = new Scanline[primLowerBound - primUpperBound];
 
-        Trace(ScreenTriangle.a, ScreenTriangle.b, PrimUpperBound, Scanlines);
-        Trace(ScreenTriangle.b, ScreenTriangle.c, PrimUpperBound, Scanlines);
-        Trace(ScreenTriangle.c, ScreenTriangle.a, PrimUpperBound, Scanlines);
+        Trace(screenTriangle.A, screenTriangle.B, primUpperBound, scanlines);
+        Trace(screenTriangle.B, screenTriangle.C, primUpperBound, scanlines);
+        Trace(screenTriangle.C, screenTriangle.A, primUpperBound, scanlines);
 
-        Scan(PrimUpperBound, PrimLowerBound, Scanlines, ViewTriangle, RenderTarget, Shader);
+        Scan(primUpperBound, primLowerBound, scanlines, viewTriangle, renderTarget, shader);
     }
 
-    void Trace(Vector2 Start, Vector2 End, int PrimUpperBound, Scanline[] Scanlines)
+    void Trace(Vector2 start, Vector2 end, int primUpperBound, Scanline[] scanlines)
     {
-        Vector2 TracePath = End - Start;
+        Vector2 tracePath = end - start;
 
-        if (TracePath.Y == 0) return;
+        if (tracePath.Y == 0) return;
 
-        float SlopeX = TracePath.X / TracePath.Y;
+        float slopeX = tracePath.X / tracePath.Y;
 
-        int TraceUpperBound = Math.Clamp(RoundTopLeft(Min(Start.Y, End.Y)), 0, Height);
-        int TraceLowerBound = Math.Clamp(RoundTopLeft(Max(Start.Y, End.Y)), 0, Height);
+        int traceUpperBound = Math.Clamp(RoundTopLeft(Min(start.Y, end.Y)), 0, Height);
+        int traceLowerBound = Math.Clamp(RoundTopLeft(Max(start.Y, end.Y)), 0, Height);
 
-        int TraceLength = TraceLowerBound - TraceUpperBound;
+        int traceLength = traceLowerBound - traceUpperBound;
 
-        if (TracePath.Y < 0)
+        if (tracePath.Y < 0)
         {
-            float OffsetX = Start.X + (TraceLowerBound - 0.5f - Start.Y) * SlopeX;
-            int ScanlineIndex = TraceLowerBound - PrimUpperBound - 1;
+            float offsetX = start.X + (traceLowerBound - 0.5f - start.Y) * slopeX;
+            int scanlineIndex = traceLowerBound - primUpperBound - 1;
 
-            for (int i = 0; i < TraceLength; i++)
+            for (int i = 0; i < traceLength; i++)
             {
-                Scanlines[ScanlineIndex].LeftBound = Math.Clamp(RoundTopLeft(OffsetX), 0, Width);
-                OffsetX -= SlopeX;
-                ScanlineIndex--;
+                scanlines[scanlineIndex].LeftBound = Math.Clamp(RoundTopLeft(offsetX), 0, Width);
+                offsetX -= slopeX;
+                scanlineIndex--;
             }
         }
         else
         {
-            float OffsetX = Start.X + (TraceUpperBound + 0.5f - Start.Y) * SlopeX;
-            int ScanlineIndex = TraceUpperBound - PrimUpperBound;
+            float offsetX = start.X + (traceUpperBound + 0.5f - start.Y) * slopeX;
+            int scanlineIndex = traceUpperBound - primUpperBound;
 
-            for (int i = 0; i < TraceLength; i++)
+            for (int i = 0; i < traceLength; i++)
             {
-                Scanlines[ScanlineIndex].RightBound = Math.Clamp(RoundTopLeft(OffsetX), 0, Width);
-                OffsetX += SlopeX;
-                ScanlineIndex++;
+                scanlines[scanlineIndex].RightBound = Math.Clamp(RoundTopLeft(offsetX), 0, Width);
+                offsetX += slopeX;
+                scanlineIndex++;
             }
         }
     }
 
-    public abstract Vector2 Project(Vector3 Point);
+    public abstract Vector2 Project(Vector3 point);
 
-    public abstract void Scan<TShader>(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Canvas RenderTarget, TShader Shader) where TShader : struct, IShader;
+    public abstract void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader;
 }
 
 public struct Scanline

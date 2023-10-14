@@ -5,44 +5,44 @@ public struct Transform3
 	public Basis3 Basis;
 	public Vector3 Translation;
 
-	public Transform3(Basis3 Basis, Vector3 Translation)
+	public Transform3(Basis3 basis, Vector3 translation)
 	{
-		this.Basis = Basis;
-		this.Translation = Translation;
+		Basis = basis;
+		Translation = translation;
 	}
 
-	public readonly Vector3 AppliedTo(Vector3 Vector) => Basis * Vector + Translation;
+	public readonly Vector3 AppliedTo(Vector3 vector) => Basis * vector + Translation;
 
-	public readonly Transform3 AppliedTo(Transform3 Transform) => new Transform3(Basis * Transform.Basis, Translation + Transform.Translation);
+	public readonly Transform3 AppliedTo(Transform3 transform) => new Transform3(Basis * transform.Basis, Translation + transform.Translation);
 }
 
 public struct Basis3
 {
-	public Vector3 i, j, k;
+	public Vector3 I, J, K;
 	
 	public static readonly Basis3 Identity = new Basis3(Vector3.UnitX, Vector3.UnitY, Vector3.UnitZ);
 
 	public Basis3(Vector3 i, Vector3 j, Vector3 k)
 	{
-		this.i = i;
-		this.j = j;
-		this.k = k;
+		I = i;
+		J = j;
+		K = k;
 	}
 
-	public static Vector3 operator *(Basis3 Basis, Vector3 Vector) => Vector.X * Basis.i + Vector.Y * Basis.j + Vector.Z * Basis.k;
+	public static Vector3 operator *(Basis3 basis, Vector3 vector) => vector.X * basis.I + vector.Y * basis.J + vector.Z * basis.K;
 
-	public static Basis3 operator *(Basis3 First, Basis3 Second) => new Basis3(First * Second.i, First * Second.j, First * Second.k);
+	public static Basis3 operator *(Basis3 first, Basis3 second) => new Basis3(first * second.I, first * second.J, first * second.K);
 
-	public static Basis3 operator /(Basis3 Basis, float Divisor) => new Basis3(Basis.i / Divisor, Basis.j / Divisor, Basis.k / Divisor);
+	public static Basis3 operator /(Basis3 basis, float divisor) => new Basis3(basis.I / divisor, basis.J / divisor, basis.K / divisor);
 
-	public readonly Basis3 Rotated(Vector3 Axis, float Angle)
+	public readonly Basis3 Rotated(Vector3 axis, float angle)
 	{
 		return new Basis3(
-			i.Rotated(Axis, Angle),
-			j.Rotated(Axis, Angle),
-			k.Rotated(Axis, Angle)
+			I.Rotated(axis, angle),
+			J.Rotated(axis, angle),
+			K.Rotated(axis, angle)
 		);
 	}
 
-	public override readonly string ToString() => $"{i}, {j}, {k}";
+	public override readonly string ToString() => $"{I}, {J}, {K}";
 }

@@ -12,12 +12,12 @@ public static class MathUtil
 
 public static class VectorExtensions
 {
-	public static Vector3 Rotated(this Vector3 Vector, Vector3 Axis, float Angle)
+	public static Vector3 Rotated(this Vector3 vector, Vector3 axis, float angle)
 	{
-		Vector3 AxisProjection = Vector3.Dot(Vector, Axis) * Axis;
-		Vector3 AxisPerpendicular = Vector - AxisProjection;
+		Vector3 axisProjection = Vector3.Dot(vector, axis) * axis;
+		Vector3 axisPerpendicular = vector - axisProjection;
 		
-		return AxisProjection + Cos(Angle) * AxisPerpendicular + Sin(Angle) * Vector3.Cross(Axis, AxisPerpendicular);
+		return axisProjection + Cos(angle) * axisPerpendicular + Sin(angle) * Vector3.Cross(axis, axisPerpendicular);
 	}
 
     public static Vector2 ClockwiseNormal(this Vector2 v) => new Vector2(-v.Y, v.X);

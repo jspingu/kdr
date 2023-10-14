@@ -31,28 +31,28 @@ public static class Program
 
 		SDL_RenderSetLogicalSize(SDLRenderer, RenderWidth, RenderHeight);
 
-		ulong CountOld = SDL_GetPerformanceCounter();
-		Queue<double> FrametimeQueue = new();
+		ulong countOld = SDL_GetPerformanceCounter();
+		Queue<double> frametimeQueue = new();
 
-		bool MouseCaptured = false;
+		bool mouseCaptured = false;
         bool quit = false;
 
 		// Rasterizer MyRasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, MathF.PI / 2f);
-		Rasterizer MyRasterizer = new OrthographicRasterizer(RenderWidth, RenderHeight);
-		Canvas MyCanvas = new(RenderWidth, RenderHeight);
+		Rasterizer myRasterizer = new OrthographicRasterizer(RenderWidth, RenderHeight);
+		Canvas myCanvas = new(RenderWidth, RenderHeight);
 		
-		TextureMap CubeTexture = new(SDL_LoadBMP("images/cubetexture.bmp"));
-		Model<TextureMap> Cube = new(MeshBuilder.BuildFromFile("assets/cube.mesh"), new(CubeTexture));
+		TextureMap cubeTexture = new(SDL_LoadBMP("images/cubetexture.bmp"));
+		Model<TextureMap> cube = new(MeshBuilder.BuildFromFile("assets/cube.mesh"), new(cubeTexture));
 
-		float Distance = 600;
+		float distance = 600;
 
         while (!quit)
 		{
-			double TimeDelta = (double) (SDL_GetPerformanceCounter() - CountOld) / SDL_GetPerformanceFrequency();
-			CountOld = SDL_GetPerformanceCounter();
+			double timeDelta = (double) (SDL_GetPerformanceCounter() - countOld) / SDL_GetPerformanceFrequency();
+			countOld = SDL_GetPerformanceCounter();
 
-			FrametimeQueue.Enqueue(TimeDelta);
-			if (FrametimeQueue.Count > 256) FrametimeQueue.Dequeue();
+			frametimeQueue.Enqueue(timeDelta);
+			if (frametimeQueue.Count > 256) frametimeQueue.Dequeue();
 
 			while (SDL_PollEvent(out SDL_Event e) != 0)
 			{
@@ -63,22 +63,22 @@ public static class Program
 						break;
 
 					case SDL_EventType.SDL_MOUSEMOTION:
-						if (!MouseCaptured) break;
+						if (!mouseCaptured) break;
 
-						Cube.Transform.Basis = Cube.Transform.Basis.Rotated(-Vector3.UnitY, e.motion.xrel * 0.005f);
-						Cube.Transform.Basis = Cube.Transform.Basis.Rotated(Vector3.UnitX, e.motion.yrel * 0.005f);
+						cube.Transform.Basis = cube.Transform.Basis.Rotated(-Vector3.UnitY, e.motion.xrel * 0.005f);
+						cube.Transform.Basis = cube.Transform.Basis.Rotated(Vector3.UnitX, e.motion.yrel * 0.005f);
 						break;
 
 					case SDL_EventType.SDL_MOUSEWHEEL:
-						Distance -= e.wheel.y * 128;
+						distance -= e.wheel.y * 128;
 						break;
 
 					case SDL_EventType.SDL_MOUSEBUTTONDOWN:
-						if (e.button.button == SDL_BUTTON_LEFT) MouseCaptured = true;
+						if (e.button.button == SDL_BUTTON_LEFT) mouseCaptured = true;
 						break;
 
 					case SDL_EventType.SDL_MOUSEBUTTONUP:
-						if (e.button.button == SDL_BUTTON_LEFT) MouseCaptured = false;
+						if (e.button.button == SDL_BUTTON_LEFT) mouseCaptured = false;
 						break;
 
 					case SDL_EventType.SDL_KEYDOWN:
@@ -86,7 +86,7 @@ public static class Program
 						{
 							case SDL_Scancode.SDL_SCANCODE_SPACE:
 								double total = 0;
-								foreach (double Frametime in FrametimeQueue)
+								foreach (double Frametime in frametimeQueue)
 								{
 									total += Frametime;
 								}
@@ -100,12 +100,12 @@ public static class Program
 				}
 			}
 
-			MyCanvas.Clear();
+			myCanvas.Clear();
 
-			Cube.Transform.Translation = Vector3.UnitZ * Distance;
-			Cube.Render(MyRasterizer, MyCanvas, new Transform3(Basis3.Identity, Vector3.Zero));
+			cube.Transform.Translation = Vector3.UnitZ * distance;
+			cube.Render(myRasterizer, myCanvas, new Transform3(Basis3.Identity, Vector3.Zero));
 			
-			MyCanvas.UploadToSDLTexture(SDLTexture);
+			myCanvas.UploadToSDLTexture(SDLTexture);
 
 			SDL_RenderClear(SDLRenderer);
 			SDL_RenderCopy(SDLRenderer, SDLTexture, 0, 0);

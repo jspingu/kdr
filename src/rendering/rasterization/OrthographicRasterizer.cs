@@ -2,52 +2,52 @@ using System.Numerics;
 
 public class OrthographicRasterizer : Rasterizer
 {
-    public OrthographicRasterizer(int Width, int Height) : base(Width, Height) {}
+    public OrthographicRasterizer(int width, int height) : base(width, height) {}
 
-    public override Vector2 Project(Vector3 Point) => Midpoint + Point.ToVector2();
+    public override Vector2 Project(Vector3 point) => Midpoint + point.ToVector2();
 
-    public override void Scan<TShader>(int UpperBound, int LowerBound, Scanline[] Scanlines, SpatialPrimitive ViewTriangle, Canvas RenderTarget, TShader Shader)
+    public override void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader)
     {
-        Basis2 InverseTransform = new Basis2(
-            (ViewTriangle.v2.Position - ViewTriangle.v1.Position).ToVector2(),
-            (ViewTriangle.v3.Position - ViewTriangle.v1.Position).ToVector2()
+        Basis2 inverseTransform = new Basis2(
+            (viewTriangle.V2.Position - viewTriangle.V1.Position).ToVector2(),
+            (viewTriangle.V3.Position - viewTriangle.V1.Position).ToVector2()
         ).Inversed();
 
-        Basis2 TextureTransform = new Basis2(
-            ViewTriangle.v2.TexCoord - ViewTriangle.v1.TexCoord,
-            ViewTriangle.v3.TexCoord - ViewTriangle.v1.TexCoord
-        ) * InverseTransform;
+        Basis2 textureTransform = new Basis2(
+            viewTriangle.V2.TexCoord - viewTriangle.V1.TexCoord,
+            viewTriangle.V3.TexCoord - viewTriangle.V1.TexCoord
+        ) * inverseTransform;
 
-        Vector2 DepthTransform = new Vector2(
-            ViewTriangle.v2.Position.Z - ViewTriangle.v1.Position.Z,
-            ViewTriangle.v3.Position.Z - ViewTriangle.v1.Position.Z
-        ) * InverseTransform;
+        Vector2 depthTransform = new Vector2(
+            viewTriangle.V2.Position.Z - viewTriangle.V1.Position.Z,
+            viewTriangle.V3.Position.Z - viewTriangle.V1.Position.Z
+        ) * inverseTransform;
 
-        Parallel.For(UpperBound, LowerBound, (y) => {
-            Scanline CurrentScan = Scanlines[y - UpperBound];
-            int Offset = y * Width;
+        Parallel.For(upperBound, lowerBound, (y) => {
+            Scanline currentScan = scanlines[y - upperBound];
+            int offset = y * Width;
 
-            Vector2 PixelCenter = new Vector2(CurrentScan.LeftBound - 1, y) + new Vector2(0.5f, 0.5f) - Project(ViewTriangle.v1.Position);
+            Vector2 pixelCenter = new Vector2(currentScan.LeftBound - 1, y) + new Vector2(0.5f, 0.5f) - Project(viewTriangle.V1.Position);
 
-            Vector2 FragmentTexCoord = ViewTriangle.v1.TexCoord + TextureTransform * PixelCenter;
-            float FragmentDepth = ViewTriangle.v1.Position.Z + Vector2.Dot(DepthTransform, PixelCenter);
+            Vector2 fragmentTexCoord = viewTriangle.V1.TexCoord + textureTransform * pixelCenter;
+            float fragmentDepth = viewTriangle.V1.Position.Z + Vector2.Dot(depthTransform, pixelCenter);
             
-            for (int x = CurrentScan.LeftBound; x < CurrentScan.RightBound; x++)
+            for (int x = currentScan.LeftBound; x < currentScan.RightBound; x++)
             {
-                FragmentTexCoord += TextureTransform.i;
-                FragmentDepth += DepthTransform.X;
+                fragmentTexCoord += textureTransform.I;
+                fragmentDepth += depthTransform.X;
 
-                if (FragmentDepth > RenderTarget.DepthBuffer[Offset + x]) continue;
-                RenderTarget.DepthBuffer[Offset + x] = FragmentDepth;
+                if (fragmentDepth > renderTarget.DepthBuffer[offset + x]) continue;
+                renderTarget.DepthBuffer[offset + x] = fragmentDepth;
 
-                ShaderParam Fragment = new ShaderParam(
+                ShaderParam fragment = new ShaderParam(
                     x, y,
-                    FragmentDepth,
-                    FragmentTexCoord,
+                    fragmentDepth,
+                    fragmentTexCoord,
                     Vector3.Zero
                 );
 
-                RenderTarget.FrameBuffer[Offset + x] = Shader.Compute(Fragment);
+                renderTarget.FrameBuffer[offset + x] = shader.Compute(fragment);
             }
         });
     }

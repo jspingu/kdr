@@ -5,11 +5,11 @@ public class Spatial
     public Transform3 Transform = new(Basis3.Identity, Vector3.Zero);
     public List<Spatial> Children = new();
 
-    public virtual void Render(Rasterizer Rasterizer, Canvas RenderTarget, Transform3 ViewTransform)
+    public virtual void Render(Rasterizer rasterizer, Canvas renderTarget, Transform3 viewTransform)
     {
-        foreach(Spatial Child in Children)
+        foreach(Spatial child in Children)
         {
-            Child.Render(Rasterizer, RenderTarget, ViewTransform.AppliedTo(Transform));
+            child.Render(rasterizer, renderTarget, viewTransform.AppliedTo(Transform));
         }
     }
 }

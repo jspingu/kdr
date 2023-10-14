@@ -6,10 +6,10 @@ public class Mesh
     public readonly Vector2[] TextureVertices;
     public readonly IndexedFace[] Faces;
 
-    public Mesh(Vector3[] Vertices, Vector2[] TextureVertices, IndexedFace[] Faces)
+    public Mesh(Vector3[] vertices, Vector2[] textureVertices, IndexedFace[] faces)
     {
-        this.Vertices = Vertices;
-        this.TextureVertices = TextureVertices;
-        this.Faces = Faces;
+        Vertices = vertices;
+        TextureVertices = textureVertices;
+        Faces = faces;
     }
 }
