@@ -4,13 +4,13 @@ public class OrthographicRasterizer : Rasterizer
 {
     public OrthographicRasterizer(int width, int height) : base(width, height) {}
 
-    public override Vector2 Project(Vector3 point) => Midpoint + point.ToVector2();
+    public override Vector2 Project(Vector3 point) => Midpoint + new Vector2(point.X, -point.Y);
 
     public override void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader)
     {
         Basis2 inverseTransform = new Basis2(
-            (viewTriangle.V2.Position - viewTriangle.V1.Position).ToVector2(),
-            (viewTriangle.V3.Position - viewTriangle.V1.Position).ToVector2()
+            Project(viewTriangle.V2.Position) - Project(viewTriangle.V1.Position),
+            Project(viewTriangle.V3.Position) - Project(viewTriangle.V1.Position)
         ).Inversed();
 
         Basis2 textureTransform = new Basis2(

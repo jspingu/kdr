@@ -37,7 +37,7 @@ public static class Program
 		bool mouseCaptured = false;
         bool quit = false;
 
-		// Rasterizer MyRasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, MathF.PI / 2f);
+		// Rasterizer myRasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, MathF.PI / 2f);
 		Rasterizer myRasterizer = new OrthographicRasterizer(RenderWidth, RenderHeight);
 		Canvas myCanvas = new(RenderWidth, RenderHeight);
 		
@@ -65,8 +65,8 @@ public static class Program
 					case SDL_EventType.SDL_MOUSEMOTION:
 						if (!mouseCaptured) break;
 
-						cube.Transform.Basis = cube.Transform.Basis.Rotated(-Vector3.UnitY, e.motion.xrel * 0.005f);
-						cube.Transform.Basis = cube.Transform.Basis.Rotated(Vector3.UnitX, e.motion.yrel * 0.005f);
+						cube.Transform.Basis = cube.Transform.Basis.Rotated(Vector3.UnitY, -e.motion.xrel * 0.005f);
+						cube.Transform.Basis = cube.Transform.Basis.Rotated(Vector3.UnitX, -e.motion.yrel * 0.005f);
 						break;
 
 					case SDL_EventType.SDL_MOUSEWHEEL:
@@ -86,13 +86,13 @@ public static class Program
 						{
 							case SDL_Scancode.SDL_SCANCODE_SPACE:
 								double total = 0;
-								foreach (double Frametime in frametimeQueue)
+								foreach (double frametime in frametimeQueue)
 								{
-									total += Frametime;
+									total += frametime;
 								}
 
-								double AvgFrametime = total/256;
-								Console.WriteLine($"{AvgFrametime * 1000}ms ({1/AvgFrametime}FPS)");
+								double avgFrametime = total/256;
+								Console.WriteLine($"{avgFrametime * 1000}ms ({1/avgFrametime}FPS)");
 								break;
 						}
 

@@ -3,15 +3,16 @@ using System.Numerics;
 
 public class PerspectiveRasterizer : Rasterizer
 {
-    float TanHalfFOV, ScreenToProjectionPlane;
+    float TanHalfFOV;
+    Vector2 ScreenToProjectionPlane;
 
     public PerspectiveRasterizer(int width, int height, float fieldOfView) : base(width, height)
     {
         TanHalfFOV = Tan(fieldOfView / 2f);
-        ScreenToProjectionPlane = TanHalfFOV / Midpoint.X;
+        ScreenToProjectionPlane = TanHalfFOV / Midpoint.X * new Vector2(1, -1);
     }
 
-    public override Vector2 Project(Vector3 point) => Midpoint + Midpoint.X * point.ToVector2() / (point.Z * TanHalfFOV);
+    public override Vector2 Project(Vector3 point) => Midpoint + Midpoint.X * new Vector2(point.X, -point.Y) / (point.Z * TanHalfFOV);
 
     public override void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader)
     {
