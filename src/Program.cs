@@ -37,6 +37,8 @@ public static class Program
 		bool MouseCaptured = false;
         bool quit = false;
 
+		// Rasterizer MyRasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, MathF.PI / 2f);
+		Rasterizer MyRasterizer = new OrthographicRasterizer(RenderWidth, RenderHeight);
 		Canvas MyCanvas = new(RenderWidth, RenderHeight);
 		
 		TextureMap CubeTexture = new(SDL_LoadBMP("images/cubetexture.bmp"));
@@ -101,7 +103,7 @@ public static class Program
 			MyCanvas.Clear();
 
 			Cube.Transform.Translation = Vector3.UnitZ * Distance;
-			Cube.Render(MyCanvas, new Transform3(Basis3.Identity, Vector3.Zero));
+			Cube.Render(MyRasterizer, MyCanvas, new Transform3(Basis3.Identity, Vector3.Zero));
 			
 			MyCanvas.UploadToSDLTexture(SDLTexture);
 

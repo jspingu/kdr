@@ -11,7 +11,7 @@ public class Model<TShader> : Spatial where TShader : struct, IShader
         this.Material = Material;
     }
 
-    public override void Render(Canvas RenderTarget, Transform3 ViewTransform)
+    public override void Render(Rasterizer Rasterizer, Canvas RenderTarget, Transform3 ViewTransform)
     {
         ViewTransform = ViewTransform.AppliedTo(Transform);
 
@@ -19,20 +19,11 @@ public class Model<TShader> : Spatial where TShader : struct, IShader
 
         for(int i = 0; i < ViewSpaceVertices.Length; i++) ViewSpaceVertices[i] = ViewTransform.AppliedTo(Mesh.Vertices[i]);
 
-        foreach(IndexedFace Face in Mesh.Faces)
-        {
-            SpatialPrimitive ViewTriangle = new(
-                new Vertex(ViewSpaceVertices[Face.v1], Mesh.TextureVertices[Face.t1]),
-                new Vertex(ViewSpaceVertices[Face.v2], Mesh.TextureVertices[Face.t2]),
-                new Vertex(ViewSpaceVertices[Face.v3], Mesh.TextureVertices[Face.t3])
-            );
-
-            RenderTarget.DrawSpatialPrimitive(ViewTriangle, Material.Shader);
-        }
+        Rasterizer.DrawModel(ViewSpaceVertices, Mesh.TextureVertices, Mesh.Faces, RenderTarget, Material.Shader);
 
         foreach(Spatial Child in Children)
         {
-            Child.Render(RenderTarget, ViewTransform);
+            Child.Render(Rasterizer, RenderTarget, ViewTransform);
         }
     }
 }
