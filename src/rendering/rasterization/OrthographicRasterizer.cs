@@ -2,7 +2,7 @@ using System.Numerics;
 
 public class OrthographicRasterizer : Rasterizer
 {
-    public OrthographicRasterizer(int width, int height) : base(width, height) {}
+    public OrthographicRasterizer(int width, int height, float near) : base(width, height, near) {}
 
     public override Vector2 Project(Vector3 point) => Midpoint + new Vector2(point.X, -point.Y);
 

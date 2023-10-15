@@ -37,11 +37,10 @@ public static class Program
 		bool mouseCaptured = false;
         bool quit = false;
 
-		// Rasterizer myRasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, MathF.PI / 2f);
-		Rasterizer myRasterizer = new OrthographicRasterizer(RenderWidth, RenderHeight);
+		Rasterizer myRasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, 50f, MathF.PI / 2f);
 		Canvas myCanvas = new(RenderWidth, RenderHeight);
 		
-		TextureMap cubeTexture = new(SDL_LoadBMP("images/cubetexture.bmp"));
+		TextureMap cubeTexture = new(SDL_LoadBMP("images/wood.bmp"));
 		Model<TextureMap> cube = new(MeshBuilder.BuildFromFile("assets/cube.mesh"), new(cubeTexture));
 
 		float distance = 600;
@@ -70,7 +69,7 @@ public static class Program
 						break;
 
 					case SDL_EventType.SDL_MOUSEWHEEL:
-						distance -= e.wheel.y * 128;
+						distance -= e.wheel.y * 64;
 						break;
 
 					case SDL_EventType.SDL_MOUSEBUTTONDOWN:

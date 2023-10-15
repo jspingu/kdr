@@ -5,12 +5,15 @@ using System.Numerics;
 public abstract class Rasterizer
 {
     public int Width, Height;
+    public float Near;
     public Vector2 Midpoint;
 
-    public Rasterizer(int width, int height)
+    public Rasterizer(int width, int height, float near)
     {
         Width = width;
         Height = height;
+
+        Near = near;
 
         Midpoint = new Vector2(width, height) / 2f;
     }
@@ -21,28 +24,113 @@ public abstract class Rasterizer
 
         for(int i = 0; i < screenSpaceVertices.Length; i++)
         {
+            if (viewSpaceVertices[i].Z < Near) continue;
             screenSpaceVertices[i] = Project(viewSpaceVertices[i]);
         }
 
         foreach(IndexedFace face in faces)
         {
-            Primitive screenTriangle = new(
+            Vector2[] screenTriangleVertices = new Vector2[]
+            {
                 screenSpaceVertices[face.V1],
                 screenSpaceVertices[face.V2],
                 screenSpaceVertices[face.V3]
-            );
+            };
+
+            Vector3[] viewTriangleVertices = new Vector3[]
+            {
+                viewSpaceVertices[face.V1],
+                viewSpaceVertices[face.V2], 
+                viewSpaceVertices[face.V3]
+            };
 
             SpatialPrimitive viewTriangle = new(
-                new Vertex(viewSpaceVertices[face.V1], textureVertices[face.T1]),
-                new Vertex(viewSpaceVertices[face.V2], textureVertices[face.T2]),
-                new Vertex(viewSpaceVertices[face.V3], textureVertices[face.T3])
+                new Vertex(viewTriangleVertices[0], textureVertices[face.T1]),
+                new Vertex(viewTriangleVertices[1], textureVertices[face.T2]),
+                new Vertex(viewTriangleVertices[2], textureVertices[face.T3])
             );
 
-            DrawTriangle(screenTriangle, viewTriangle, renderTarget, shader);
+            int behindNearCount = 0;
+            
+            int indexBehind = 3;
+            int indexFront = 3;
+
+            for(int i = 0; i < 3; i++)
+            {
+                if(viewTriangleVertices[i].Z < Near)
+                {
+                    behindNearCount++;
+                    indexFront -= i;
+                }
+                else
+                {
+                    indexBehind -= i;
+                }
+            }
+
+            switch(behindNearCount)
+            {
+                case 0:
+                {
+                    Primitive screenTriangle = new(
+                        screenTriangleVertices[0],
+                        screenTriangleVertices[1],
+                        screenTriangleVertices[2]
+                    );
+
+                    DrawTriangle(screenTriangle, viewTriangle, renderTarget, shader);
+
+                    break;
+                }
+                
+                case 1:
+                {
+                    int nextIndex = (indexBehind + 1) % 3;
+                    int previousIndex = (indexBehind + 2) % 3;
+
+                    Vector2 pivot = Project(IntersectNear(viewTriangleVertices[indexBehind], viewTriangleVertices[nextIndex]));
+                    Vector2 end = Project(IntersectNear(viewTriangleVertices[indexBehind], viewTriangleVertices[previousIndex]));
+
+                    Primitive screenTriangle1 = new(
+                        pivot,
+                        screenTriangleVertices[nextIndex],
+                        screenTriangleVertices[previousIndex]
+                    );
+
+                    Primitive screenTriangle2 = new(
+                        pivot,
+                        screenTriangleVertices[previousIndex],
+                        end
+                    );
+
+                    DrawTriangle(screenTriangle1, viewTriangle, renderTarget, shader);
+                    DrawTriangle(screenTriangle2, viewTriangle, renderTarget, shader);
+
+                    break;
+                }
+
+                case 2:
+                {
+                    int nextIndex = (indexFront + 1) % 3;
+                    int previousIndex = (indexFront + 2) % 3;
+
+                    Primitive screenTriangle = new(
+                        screenTriangleVertices[indexFront],
+                        Project(IntersectNear(viewTriangleVertices[indexFront], viewTriangleVertices[nextIndex])),
+                        Project(IntersectNear(viewTriangleVertices[indexFront], viewTriangleVertices[previousIndex]))
+                    );
+
+                    DrawTriangle(screenTriangle, viewTriangle, renderTarget, shader);
+
+                    break;
+                }
+            }
         }
     }
 
-    public void DrawTriangle<TShader>(Primitive screenTriangle, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
+    Vector3 IntersectNear(Vector3 start, Vector3 end) => start + (end - start) * (Near - start.Z) / (end.Z - start.Z);
+
+    void DrawTriangle<TShader>(Primitive screenTriangle, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
     {
         Vector2 AToB = screenTriangle.B - screenTriangle.A;
         Vector2 AToC = screenTriangle.C - screenTriangle.A;
