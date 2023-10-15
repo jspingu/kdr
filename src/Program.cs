@@ -102,7 +102,7 @@ public static class Program
 			myCanvas.Clear();
 
 			cube.Transform.Translation = Vector3.UnitZ * distance;
-			cube.Render(myRasterizer, myCanvas, new Transform3(Basis3.Identity, Vector3.Zero));
+			cube.RenderCascading(myRasterizer, myCanvas, new Transform3(Basis3.Identity, Vector3.Zero));
 			
 			myCanvas.UploadToSDLTexture(SDLTexture);
 
