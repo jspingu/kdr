@@ -5,17 +5,24 @@ using System.Numerics;
 public abstract class Rasterizer
 {
     public int Width, Height;
-    public float Near;
+    public float Near, Far;
     public Vector2 Midpoint;
 
-    public Rasterizer(int width, int height, float near)
+    public Rasterizer(int width, int height, float near, float far)
     {
         Width = width;
         Height = height;
 
         Near = near;
+        Far = far;
 
         Midpoint = new Vector2(width, height) / 2f;
+    }
+
+    static Vector3 IntersectViewAlignedPlane(Vector3 start, Vector3 end, float depth)
+    {
+        Vector3 path = end - start;
+        return start + path / path.Z * (depth - start.Z);
     }
 
     public void DrawModel<TShader>(Vector3[] viewSpaceVertices, Vector2[] textureVertices, IndexedFace[] faces, Canvas renderTarget, TShader shader) where TShader : struct, IShader
@@ -24,7 +31,7 @@ public abstract class Rasterizer
 
         for(int i = 0; i < screenSpaceVertices.Length; i++)
         {
-            if (viewSpaceVertices[i].Z < Near) continue;
+            if (viewSpaceVertices[i].Z > Far || viewSpaceVertices[i].Z < Near) continue;
             screenSpaceVertices[i] = Project(viewSpaceVertices[i]);
         }
 
@@ -41,7 +48,8 @@ public abstract class Rasterizer
             {
                 viewSpaceVertices[face.V1],
                 viewSpaceVertices[face.V2], 
-                viewSpaceVertices[face.V3]
+                viewSpaceVertices[face.V3],
+                viewSpaceVertices[face.V1]
             };
 
             SpatialPrimitive viewTriangle = new(
@@ -50,85 +58,55 @@ public abstract class Rasterizer
                 new Vertex(viewTriangleVertices[2], textureVertices[face.T3])
             );
 
-            int behindNearCount = 0;
-            
-            int indexBehind = 3;
-            int indexFront = 3;
+            int vertexCount = 0;
+            Vector2[] clippedVertices = new Vector2[5];
 
             for(int i = 0; i < 3; i++)
             {
-                if(viewTriangleVertices[i].Z < Near)
+                Vector3 current = viewTriangleVertices[i];
+                Vector3 next = viewTriangleVertices[i + 1];
+
+                float firstDepth = Near;
+                float secondDepth = Far;
+                
+                bool firstCondition, secondCondition;
+
+                if (current.Z <= Far)
                 {
-                    behindNearCount++;
-                    indexFront -= i;
+                    secondCondition = next.Z > Far;
+
+                    if (current.Z >= Near)
+                    {
+                        clippedVertices[vertexCount++] = screenTriangleVertices[i];
+                        firstCondition = next.Z < Near;
+                    }
+                    else firstCondition = next.Z > Near;
                 }
                 else
                 {
-                    indexBehind -= i;
+                    firstDepth = Far;
+                    secondDepth = Near;
+
+                    firstCondition = next.Z < Far;
+                    secondCondition = next.Z < Near;
                 }
+
+                if (firstCondition) clippedVertices[vertexCount++] = Project(IntersectViewAlignedPlane(current, next, firstDepth));
+                if (secondCondition) clippedVertices[vertexCount++] = Project(IntersectViewAlignedPlane(current, next, secondDepth));
             }
 
-            switch(behindNearCount)
+            for(int i = 0; i < vertexCount - 2; i++)
             {
-                case 0:
-                {
-                    Primitive screenTriangle = new(
-                        screenTriangleVertices[0],
-                        screenTriangleVertices[1],
-                        screenTriangleVertices[2]
-                    );
+                Primitive screenTriangle = new(
+                    clippedVertices[0],
+                    clippedVertices[i + 1],
+                    clippedVertices[i + 2]
+                );
 
-                    DrawTriangle(screenTriangle, viewTriangle, renderTarget, shader);
-
-                    break;
-                }
-                
-                case 1:
-                {
-                    int nextIndex = (indexBehind + 1) % 3;
-                    int previousIndex = (indexBehind + 2) % 3;
-
-                    Vector2 pivot = Project(IntersectNear(viewTriangleVertices[indexBehind], viewTriangleVertices[nextIndex]));
-                    Vector2 end = Project(IntersectNear(viewTriangleVertices[indexBehind], viewTriangleVertices[previousIndex]));
-
-                    Primitive screenTriangle1 = new(
-                        pivot,
-                        screenTriangleVertices[nextIndex],
-                        screenTriangleVertices[previousIndex]
-                    );
-
-                    Primitive screenTriangle2 = new(
-                        pivot,
-                        screenTriangleVertices[previousIndex],
-                        end
-                    );
-
-                    DrawTriangle(screenTriangle1, viewTriangle, renderTarget, shader);
-                    DrawTriangle(screenTriangle2, viewTriangle, renderTarget, shader);
-
-                    break;
-                }
-
-                case 2:
-                {
-                    int nextIndex = (indexFront + 1) % 3;
-                    int previousIndex = (indexFront + 2) % 3;
-
-                    Primitive screenTriangle = new(
-                        screenTriangleVertices[indexFront],
-                        Project(IntersectNear(viewTriangleVertices[indexFront], viewTriangleVertices[nextIndex])),
-                        Project(IntersectNear(viewTriangleVertices[indexFront], viewTriangleVertices[previousIndex]))
-                    );
-
-                    DrawTriangle(screenTriangle, viewTriangle, renderTarget, shader);
-
-                    break;
-                }
+                DrawTriangle(screenTriangle, viewTriangle, renderTarget, shader);
             }
         }
     }
-
-    Vector3 IntersectNear(Vector3 start, Vector3 end) => start + (end - start) * (Near - start.Z) / (end.Z - start.Z);
 
     void DrawTriangle<TShader>(Primitive screenTriangle, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
     {

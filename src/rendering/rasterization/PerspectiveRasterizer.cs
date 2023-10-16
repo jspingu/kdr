@@ -6,7 +6,7 @@ public class PerspectiveRasterizer : Rasterizer
     float TanHalfFOV;
     Vector2 ScreenToProjectionPlane;
 
-    public PerspectiveRasterizer(int width, int height, float near, float fieldOfView) : base(width, height, near)
+    public PerspectiveRasterizer(int width, int height, float near, float far, float fieldOfView) : base(width, height, near, far)
     {
         TanHalfFOV = Tan(fieldOfView / 2f);
         ScreenToProjectionPlane = TanHalfFOV / Midpoint.X * new Vector2(1, -1);
