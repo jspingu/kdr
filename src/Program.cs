@@ -40,8 +40,9 @@ public static class Program
 		Rasterizer myRasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, 5f, 1000f, MathF.PI / 2f);
 		Canvas myCanvas = new(RenderWidth, RenderHeight);
 		
-		TextureMap cubeTexture = new(SDL_LoadBMP("images/cubetexture.bmp"));
-		Model<TextureMap> cube = new(MeshBuilder.BuildFromFile("assets/cube.mesh"), new(cubeTexture));
+		IntPtr texture = SDL_LoadBMP("images/wood.bmp");
+		TextureMap cubeShader = new(texture);
+		Model<TextureMap> cube = new(MeshBuilder.BuildFromFile("assets/cube.mesh"), new(cubeShader));
 
 		float distance = 600;
 
@@ -110,6 +111,8 @@ public static class Program
 			SDL_RenderCopy(SDLRenderer, SDLTexture, 0, 0);
 			SDL_RenderPresent(SDLRenderer);
 		}
+
+		SDL_FreeSurface(texture);
 
 		SDL_DestroyWindow(SDLWindow);
 		SDL_DestroyRenderer(SDLRenderer);

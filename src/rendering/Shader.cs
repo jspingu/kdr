@@ -9,7 +9,7 @@ public class Material<TShader> where TShader : struct, IShader
 
 public interface IShader
 {
-    int Compute(ShaderParam fragment);
+    uint Compute(ShaderParam fragment);
 }
 
 public struct ShaderParam
@@ -32,12 +32,12 @@ public struct ShaderParam
 
 public struct SimpleLight : IShader
 {
-    public int Compute(ShaderParam fragment) => Color(new Vector3(-fragment.Normal.Z * 0.5f + 0.5f) * 255);
+    public uint Compute(ShaderParam fragment) => AlphaBlend(0xFFFFFF | (uint)((-fragment.Normal.Z * 0.5f + 0.5f) * 255) << 24, 0);
 }
 
 public struct White : IShader
 {
-    public int Compute(ShaderParam fragment) => 0xFFFFFF;
+    public uint Compute(ShaderParam fragment) => 0xFFFFFF;
 }
 
 public struct TextureMap : IShader
@@ -45,11 +45,14 @@ public struct TextureMap : IShader
     public IntPtr Texture;
     
     public TextureMap(IntPtr texture) => Texture = texture;
-    // public int Compute(ShaderParam fragment) => Color(VectorColor(NearestTexel(fragment.TexCoord, Texture)) * (-fragment.Normal.Z * 0.5f + 0.5f));
-    public int Compute(ShaderParam fragment) => NearestTexel(fragment.TexCoord, Texture);
+    public uint Compute(ShaderParam fragment) 
+    {
+        uint alpha = (uint)((-fragment.Normal.Z * 0.5f + 0.5f) * 255);
+        return AlphaBlend(NearestTexel(fragment.TexCoord, Texture) | alpha << 24, 0);
+    }
 }
 
 public struct DepthVisual : IShader
 {
-    public int Compute(ShaderParam fragment) => Color(new Vector3(fragment.Depth * 0.001f * 255));
+    public uint Compute(ShaderParam fragment) => Color(new Vector3(fragment.Depth * 0.001f * 255));
 }

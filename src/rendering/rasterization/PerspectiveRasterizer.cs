@@ -20,6 +20,7 @@ public class PerspectiveRasterizer : Rasterizer
         Vector3 viewAC = viewTriangle.V3.Position - viewTriangle.V1.Position;
 
         Vector3 normal = Vector3.Cross(viewAB, viewAC);
+        Vector3 unitNormal = Vector3.Normalize(normal);
 
         Vector3 perpAB = Vector3.Cross(normal, viewAB);
         Vector3 perpAC = Vector3.Cross(viewAC, normal);
@@ -57,7 +58,7 @@ public class PerspectiveRasterizer : Rasterizer
                     x, y,
                     fragmentDepth,
                     fragmentTexCoord,
-                    normal
+                    unitNormal
                 );
 
                 renderTarget.FrameBuffer[Offset + x] = shader.Compute(fragment);

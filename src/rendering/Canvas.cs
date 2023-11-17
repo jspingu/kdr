@@ -1,12 +1,13 @@
 using static SDL2.SDL;
 using System.Runtime.InteropServices;
+using SDL2;
 
 public class Canvas
 {
-    public int[] FrameBuffer;
+    public uint[] FrameBuffer;
     public float[] DepthBuffer;
 
-    public readonly int Width, Height, Length, Pitch;
+    public readonly int Width, Height, Length, Pitch, Bytes;
 
     public Canvas(int width, int height)
     {
@@ -14,9 +15,10 @@ public class Canvas
         Height = height;
         
         Length = width * height;
-        Pitch = width * sizeof(int);
+        Pitch = width * sizeof(uint);
+        Bytes = Length * sizeof(uint);
         
-        FrameBuffer = new int[width * height];
+        FrameBuffer = new uint[width * height];
         DepthBuffer = new float[width * height];
     }
 
@@ -26,13 +28,21 @@ public class Canvas
         Array.Fill(DepthBuffer, float.MaxValue);
     }
 
-    public unsafe void PushToSurface(IntPtr surface) => Marshal.Copy(FrameBuffer, 0, ((SDL_Surface*)surface)->pixels, Length);
+    // public unsafe void PushToSurface(IntPtr surface) => Marshal.Copy(FrameBuffer, 0, ((SDL_Surface*)surface)->pixels, Length);
+
+    public unsafe void PushToSurface(IntPtr surface) 
+    {
+        fixed(void* bufferPtr = &FrameBuffer[0])
+        {
+            Buffer.MemoryCopy(bufferPtr, (void*)((SDL_Surface*)surface)->pixels, Bytes, Bytes);
+        }
+    }
 
     public unsafe void UploadToSDLTexture(IntPtr texture)
     {
-        fixed(void* BufferPtr = &FrameBuffer[0])
+        fixed(void* bufferPtr = &FrameBuffer[0])
         {
-            SDL_UpdateTexture(texture, 0, (IntPtr)BufferPtr, Pitch);
+            SDL_UpdateTexture(texture, 0, (IntPtr)bufferPtr, Pitch);
         }
     }
 }
