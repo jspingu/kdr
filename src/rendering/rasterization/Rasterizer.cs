@@ -25,18 +25,20 @@ public abstract class Rasterizer
         return start + path / path.Z * (depth - start.Z);
     }
 
-    public void DrawModel<TShader>(Vector3[] viewSpaceVertices, Vector2[] textureVertices, IndexedFace[] faces, Canvas renderTarget, TShader shader) where TShader : struct, IShader
+    public void DrawScene(GeometryBuffer geometryBuffer, Canvas renderTarget)
     {
-        Vector2[] screenSpaceVertices = new Vector2[viewSpaceVertices.Length];
+        Vector2[] screenSpaceVertices = new Vector2[geometryBuffer.ViewSpaceVertices.Length];
 
         for(int i = 0; i < screenSpaceVertices.Length; i++)
         {
-            if (viewSpaceVertices[i].Z > Far || viewSpaceVertices[i].Z < Near) continue;
-            screenSpaceVertices[i] = Project(viewSpaceVertices[i]);
+            if (geometryBuffer.ViewSpaceVertices[i].Z > Far || geometryBuffer.ViewSpaceVertices[i].Z < Near) continue;
+            screenSpaceVertices[i] = Project(geometryBuffer.ViewSpaceVertices[i]);
         }
 
-        foreach(IndexedFace face in faces)
+        for(int faceIndex = 0; faceIndex < geometryBuffer.QueuedFaces.Count; faceIndex++)
         {
+            IndexedFace face = geometryBuffer.MatFaces[faceIndex].Face;
+
             Vector2[] screenTriangleVertices = new Vector2[]
             {
                 screenSpaceVertices[face.V1],
@@ -46,16 +48,16 @@ public abstract class Rasterizer
 
             Vector3[] viewTriangleVertices = new Vector3[]
             {
-                viewSpaceVertices[face.V1],
-                viewSpaceVertices[face.V2], 
-                viewSpaceVertices[face.V3],
-                viewSpaceVertices[face.V1]
+                geometryBuffer.ViewSpaceVertices[face.V1],
+                geometryBuffer.ViewSpaceVertices[face.V2], 
+                geometryBuffer.ViewSpaceVertices[face.V3],
+                geometryBuffer.ViewSpaceVertices[face.V1]
             };
 
             SpatialPrimitive viewTriangle = new(
-                new Vertex(viewTriangleVertices[0], textureVertices[face.T1]),
-                new Vertex(viewTriangleVertices[1], textureVertices[face.T2]),
-                new Vertex(viewTriangleVertices[2], textureVertices[face.T3])
+                new Vertex(viewTriangleVertices[0], geometryBuffer.TextureVertices[face.T1]),
+                new Vertex(viewTriangleVertices[1], geometryBuffer.TextureVertices[face.T2]),
+                new Vertex(viewTriangleVertices[2], geometryBuffer.TextureVertices[face.T3])
             );
 
             int vertexCount = 0;
@@ -103,12 +105,12 @@ public abstract class Rasterizer
                     clippedVertices[i + 2]
                 );
 
-                DrawTriangle(screenTriangle, viewTriangle, renderTarget, shader);
+                geometryBuffer.MatFaces[faceIndex].Material.CallTriangleDraw(this, screenTriangle, viewTriangle, renderTarget);
             }
         }
     }
 
-    void DrawTriangle<TShader>(Primitive screenTriangle, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
+    public void DrawTriangle<TShader>(Primitive screenTriangle, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
     {
         Vector2 AToB = screenTriangle.B - screenTriangle.A;
         Vector2 AToC = screenTriangle.C - screenTriangle.A;

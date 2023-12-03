@@ -1,5 +1,6 @@
 ﻿using static SDL2.SDL;
 using System.Numerics;
+using SDL2;
 
 public static class Program
 {
@@ -39,12 +40,35 @@ public static class Program
 
 		Rasterizer myRasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, 5f, 1000f, MathF.PI / 2f);
 		Canvas myCanvas = new(RenderWidth, RenderHeight);
-		
+		GeometryBuffer OpaqueGeometryBuffer = new();
+
+		Entity world = new();
+		Entity myCube = new();
+
 		IntPtr texture = SDL_LoadBMP("images/wood.bmp");
 		TextureMap cubeShader = new(texture);
-		Model<TextureMap> cube = new(MeshBuilder.BuildFromFile("assets/cube.mesh"), new(cubeShader));
+		Material<TextureMap> cubeMaterial = new(cubeShader);
 
-		float distance = 600;
+		world
+			.SetComponent<Processor>(new WorldProcess())
+			.SetComponent<Spatial>(new())
+			.OnTreeEnter(world);
+
+		myCube
+			.SetComponent<Spatial>(new Model(
+				OpaqueGeometryBuffer,
+				MeshBuilder.BuildFromFile("assets/cube.mesh"),
+				cubeMaterial
+			));
+
+		world.AddChild(myCube);
+
+		float yaw = 0;
+		float pitch = 0;
+
+		Vector3 cameraPos = new(0, 0, -500);
+
+		List<SDL_Scancode> keysHeld = new();
 
         while (!quit)
 		{
@@ -65,45 +89,76 @@ public static class Program
 					case SDL_EventType.SDL_MOUSEMOTION:
 						if (!mouseCaptured) break;
 
-						cube.Transform.Basis = cube.Transform.Basis.Rotated(Vector3.UnitY, -e.motion.xrel * 0.005f);
-						cube.Transform.Basis = cube.Transform.Basis.Rotated(Vector3.UnitX, -e.motion.yrel * 0.005f);
+						yaw -= e.motion.xrel * 0.002f;
+						pitch -= e.motion.yrel * 0.002f;
+
 						break;
 
-					case SDL_EventType.SDL_MOUSEWHEEL:
-						distance -= e.wheel.y * 64;
-						break;
+					// case SDL_EventType.SDL_MOUSEBUTTONDOWN:
+					// 	if (e.button.button == SDL_BUTTON_LEFT) mouseCaptured = true;
+					// 	break;
 
-					case SDL_EventType.SDL_MOUSEBUTTONDOWN:
-						if (e.button.button == SDL_BUTTON_LEFT) mouseCaptured = true;
-						break;
-
-					case SDL_EventType.SDL_MOUSEBUTTONUP:
-						if (e.button.button == SDL_BUTTON_LEFT) mouseCaptured = false;
-						break;
+					// case SDL_EventType.SDL_MOUSEBUTTONUP:
+					// 	if (e.button.button == SDL_BUTTON_LEFT) mouseCaptured = false;
+					// 	break;
 
 					case SDL_EventType.SDL_KEYDOWN:
+						if(!keysHeld.Contains(e.key.keysym.scancode)) keysHeld.Add(e.key.keysym.scancode);
+
 						switch (e.key.keysym.scancode)
 						{
-							case SDL_Scancode.SDL_SCANCODE_SPACE:
-								double total = 0;
-								foreach (double frametime in frametimeQueue)
-								{
-									total += frametime;
-								}
-
-								double avgFrametime = total/256;
-								Console.WriteLine($"{avgFrametime * 1000}ms ({1/avgFrametime}FPS)");
+							case SDL_Scancode.SDL_SCANCODE_ESCAPE:
+								mouseCaptured = !mouseCaptured;
+								SDL_SetRelativeMouseMode((SDL_bool)Convert.ToInt32(mouseCaptured));
 								break;
 						}
 
+						// 	case SDL_Scancode.SDL_SCANCODE_SPACE:
+						// 		double total = 0;
+						// 		foreach (double frametime in frametimeQueue)
+						// 		{
+						// 			total += frametime;
+						// 		}
+
+						// 		double avgFrametime = total/256;
+						// 		Console.WriteLine($"{avgFrametime * 1000}ms ({1/avgFrametime}FPS)");
+						// 		break;
+						// }
+
+						break;
+					
+					case SDL_EventType.SDL_KEYUP:
+						if(keysHeld.Contains(e.key.keysym.scancode)) keysHeld.Remove(e.key.keysym.scancode);
 						break;
 				}
 			}
 
 			myCanvas.Clear();
 
-			cube.Transform.Translation = Vector3.UnitZ * distance;
-			cube.RenderCascading(myRasterizer, myCanvas, new Transform3(Basis3.Identity, Vector3.Zero));
+			Vector3 velocity = Vector3.Zero;
+
+			if(keysHeld.Contains(SDL_Scancode.SDL_SCANCODE_W)) velocity.Z += 1;
+			if(keysHeld.Contains(SDL_Scancode.SDL_SCANCODE_S)) velocity.Z -= 1;
+			if(keysHeld.Contains(SDL_Scancode.SDL_SCANCODE_D)) velocity.X += 1;
+			if(keysHeld.Contains(SDL_Scancode.SDL_SCANCODE_A)) velocity.X -= 1;
+
+			if(keysHeld.Contains(SDL_Scancode.SDL_SCANCODE_SPACE)) velocity.Y += 1;
+			if(keysHeld.Contains(SDL_Scancode.SDL_SCANCODE_LCTRL)) velocity.Y -= 1;
+
+			if(velocity != Vector3.Zero) velocity = Vector3.Normalize(velocity.Rotated(-Vector3.UnitY, yaw)) * 600 * (float)delta;
+			cameraPos += velocity;
+
+			Basis3 worldToView = Basis3.Identity.Rotated(Vector3.UnitY, yaw).Rotated(Vector3.UnitX, pitch);
+			world.GetComponent<Spatial>().Transform = new(
+				worldToView,
+				-(worldToView * cameraPos)
+			);
+
+			world.ProcessCascading((float)delta);
+			world.RenderProcessCascading(Transform3.Default);
+
+			myRasterizer.DrawScene(OpaqueGeometryBuffer, myCanvas);
+			OpaqueGeometryBuffer.ResetState();
 			
 			myCanvas.UploadToSDLTexture(SDLTexture);
 

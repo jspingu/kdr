@@ -1,5 +1,35 @@
 using System.Numerics;
 
+public struct GeometryCount
+{
+    public int VertexCount, TextureVertexCount, FaceCount;
+
+    public GeometryCount(int vertexCount, int textureVertexCount, int faceCount)
+    {
+        VertexCount = vertexCount;
+        TextureVertexCount = textureVertexCount;
+        FaceCount = faceCount;
+    }
+
+    public static GeometryCount operator +(GeometryCount first, GeometryCount second) => new(
+        first.VertexCount + second.VertexCount,
+        first.TextureVertexCount + second.TextureVertexCount,
+        first.FaceCount + second.FaceCount
+    );
+}
+
+public struct MaterialBoundFace
+{
+    public IndexedFace Face;
+    public Material Material;
+
+    public MaterialBoundFace(IndexedFace face, Material material)
+    {
+        Face = face;
+        Material = material;
+    }
+}
+
 public struct IndexedFace
 {
     public int V1, V2, V3;
@@ -15,6 +45,15 @@ public struct IndexedFace
         T2 = t2;
         T3 = t3;
     }
+
+    public IndexedFace OffsetIndices(int vertexOffset, int textureVertexOffset) => new(
+        V1 + vertexOffset,
+        V2 + vertexOffset,
+        V3 + vertexOffset,
+        T1 + textureVertexOffset,
+        T2 + textureVertexOffset,
+        T3 + textureVertexOffset
+    );
 }
 
 public struct Vertex

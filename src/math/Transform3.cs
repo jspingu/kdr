@@ -5,6 +5,8 @@ public struct Transform3
 	public Basis3 Basis;
 	public Vector3 Translation;
 
+	public static readonly Transform3 Default = new Transform3(Basis3.Identity, Vector3.Zero);
+
 	public Transform3(Basis3 basis, Vector3 translation)
 	{
 		Basis = basis;
