@@ -13,7 +13,7 @@ public struct Transform2
 
     public readonly Vector2 AppliedTo(Vector2 vector) => Basis * vector + Translation;
 
-	public readonly Transform2 AppliedTo(Transform2 transform) => new Transform2(Basis * transform.Basis, Translation + transform.Translation);
+	public readonly Transform2 AppliedTo(Transform2 transform) => new Transform2(Basis * transform.Basis, this.AppliedTo(transform.Translation));
 }
 
 public struct Basis2

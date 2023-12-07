@@ -15,7 +15,7 @@ public struct Transform3
 
 	public readonly Vector3 AppliedTo(Vector3 vector) => Basis * vector + Translation;
 
-	public readonly Transform3 AppliedTo(Transform3 transform) => new Transform3(Basis * transform.Basis, Translation + transform.Translation);
+	public readonly Transform3 AppliedTo(Transform3 transform) => new Transform3(Basis * transform.Basis, this.AppliedTo(transform.Translation));
 }
 
 public struct Basis3
