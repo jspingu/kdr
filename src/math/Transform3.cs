@@ -46,5 +46,12 @@ public struct Basis3
 		);
 	}
 
+	public void Rotate(Vector3 axis, float angle)
+	{
+		I = I.Rotated(axis, angle);
+		J = J.Rotated(axis, angle);
+		K = K.Rotated(axis, angle);
+	}
+
 	public override readonly string ToString() => $"{I}, {J}, {K}";
 }

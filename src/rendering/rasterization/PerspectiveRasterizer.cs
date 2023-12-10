@@ -41,7 +41,7 @@ public class PerspectiveRasterizer : Rasterizer
 
         Parallel.For(upperBound, lowerBound, (y) => {
             Scanline currentScan = scanlines[y - upperBound];
-            int Offset = y * Width;
+            int offset = y * Width;
             
             for (int x = currentScan.LeftBound; x < currentScan.RightBound; x++)
             {
@@ -49,8 +49,8 @@ public class PerspectiveRasterizer : Rasterizer
 
                 float fragmentDepth = normalDisplacement / Vector3.Dot(new Vector3(projPlane, 1), normal);
 
-                if (fragmentDepth > renderTarget.DepthBuffer[Offset + x]) continue;
-                renderTarget.DepthBuffer[Offset + x] = fragmentDepth;
+                if (fragmentDepth > renderTarget.DepthBuffer[offset + x]) continue;
+                renderTarget.DepthBuffer[offset + x] = fragmentDepth;
 
                 Vector2 fragmentTexCoord = viewTriangle.V1.TexCoord + (textureTransform * (new Vector3(projPlane, 1) * fragmentDepth - viewTriangle.V1.Position)).ToVector2();
 
@@ -61,7 +61,7 @@ public class PerspectiveRasterizer : Rasterizer
                     unitNormal
                 );
 
-                renderTarget.FrameBuffer[Offset + x] = shader.Compute(fragment);
+                renderTarget.FrameBuffer[offset + x] = shader.Compute(fragment);
             }
         });
     }
