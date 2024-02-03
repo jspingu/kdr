@@ -24,13 +24,16 @@ public interface IShader
 
 public struct ShaderParam
 {
+    public uint Color;
     public int X, Y;
     public Vector2 TexCoord;
     public Vector3 Normal;
     public float Depth;
 
-    public ShaderParam(int x, int y, float depth, Vector2 texCoord, Vector3 normal)
+    public ShaderParam(uint color, int x, int y, float depth, Vector2 texCoord, Vector3 normal)
     {
+        Color = color;
+
         X = x;
         Y = y;
         
@@ -62,7 +65,10 @@ public struct TextureMap : IShader
     }
 }
 
-public struct DepthVisual : IShader
+public struct TestTransparency : IShader
 {
-    public uint Compute(ShaderParam fragment) => Color(new Vector3(fragment.Depth * 0.001f * 255));
+    public uint Compute(ShaderParam fragment)
+    {
+        return AlphaBlend(0xAAFF0000, fragment.Color);
+    }
 }

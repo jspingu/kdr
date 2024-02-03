@@ -41,6 +41,7 @@ public class OrthographicRasterizer : Rasterizer
                 renderTarget.DepthBuffer[offset + x] = fragmentDepth;
 
                 ShaderParam fragment = new ShaderParam(
+                    renderTarget.FrameBuffer[offset + x],
                     x, y,
                     fragmentDepth,
                     fragmentTexCoord,

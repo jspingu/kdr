@@ -55,6 +55,7 @@ public class PerspectiveRasterizer : Rasterizer
                 Vector2 fragmentTexCoord = viewTriangle.V1.TexCoord + (textureTransform * (new Vector3(projPlane, 1) * fragmentDepth - viewTriangle.V1.Position)).ToVector2();
 
                 ShaderParam fragment = new ShaderParam(
+                    renderTarget.FrameBuffer[offset + x],
                     x, y,
                     fragmentDepth,
                     fragmentTexCoord,

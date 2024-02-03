@@ -10,7 +10,7 @@ public class RootProcess : Processor
     float Yaw = 0;
     float Pitch = 0;
 
-    IntPtr CubeTexture;
+    IntPtr CubeTexture, RectTexture;
 
     public override void OnTreeEnter()
     {
@@ -26,10 +26,45 @@ public class RootProcess : Processor
                 cubeMaterial
             ));
 
+        cube.GetComponent<Spatial>().Transform.Translation = new Vector3(100,0,0);
+
         ThisEntity.AddChild(cube);
+
+        RectTexture = SDL_LoadBMP("images/cat.bmp");
+        // TextureMap rectShader = new(RectTexture);
+        // Material<TextureMap> rectMaterial = new(rectShader);
+
+        Material<TestTransparency> rectMaterial = new(new TestTransparency());
+
+        Entity rect = new();
+        rect
+            .SetComponent<Spatial>(new Model(
+                Program.OpaqueGeometryBuffer,
+                MeshBuilder.CreateRectangleMesh(500, 500),
+                rectMaterial
+            ));
+
+        ThisEntity.AddChild(rect);
+
+        Entity rect2 = new();
+        rect2
+            .SetComponent<Spatial>(new Model(
+                Program.OpaqueGeometryBuffer,
+                MeshBuilder.CreateRectangleMesh(500, 500),
+                rectMaterial
+            ))
+            .SetComponent<Processor>(
+                new TestProcess()
+            );
+
+        ThisEntity.AddChild(rect2);
     }
 
-    public override void OnTreeExit() => SDL_FreeSurface(CubeTexture);
+    public override void OnTreeExit()
+    {
+        SDL_FreeSurface(CubeTexture);
+        SDL_FreeSurface(RectTexture);
+    }
 
     public override void Process(float delta)
     {
