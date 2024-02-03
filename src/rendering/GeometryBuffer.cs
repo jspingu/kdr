@@ -1,3 +1,5 @@
+namespace KDR;
+
 using System.Numerics;
 
 public class GeometryBuffer
@@ -92,4 +94,19 @@ public class GeometryBuffer
 
         QueuedFaces.Clear();
     }
+
+    // public void Sort()
+    // {
+    //     QueuedFaces.Sort((matface1, matface2) => {
+    //         Vector3 n1 = Vector3.Cross(
+    //             ViewSpaceVertices[matface1.Face.V2] - ViewSpaceVertices[matface1.Face.V1],
+    //             ViewSpaceVertices[matface1.Face.V3] - ViewSpaceVertices[matface1.Face.V1]
+    //         );
+
+    //         Vector3 midpoint1 = (ViewSpaceVertices[matface1.Face.V1] + ViewSpaceVertices[matface1.Face.V2] + ViewSpaceVertices[matface1.Face.V3]) / 3;
+    //         Vector3 midpoint2 = (ViewSpaceVertices[matface2.Face.V1] + ViewSpaceVertices[matface2.Face.V2] + ViewSpaceVertices[matface2.Face.V3]) / 3;
+
+    //         return (int)(midpoint1 - midpoint2).Z;
+    //     });
+    // }
 }

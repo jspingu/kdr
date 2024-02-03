@@ -1,3 +1,5 @@
+namespace KDR;
+
 public class Entity
 {
     public Entity Root;

@@ -1,3 +1,5 @@
+namespace KDR;
+
 using static SDL2.SDL;
 using static System.MathF;
 using System.Numerics;

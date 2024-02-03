@@ -1,9 +1,11 @@
+namespace KDR;
+
 using System.Numerics;
 using static ShaderUtil;
 
 public abstract class Material
 {
-    public abstract void CallTriangleDraw(Rasterizer rasterizer, Primitive<Vector2> screenTriangle, Primitive<Vertex> viewTriangle, Canvas renderTarget);
+    internal abstract void CallTriangleDraw(Rasterizer rasterizer, Primitive<Vector2> screenTriangle, Primitive<Vertex> viewTriangle, Canvas renderTarget);
 }
 
 public class Material<TShader> : Material where TShader : struct, IShader
@@ -11,7 +13,7 @@ public class Material<TShader> : Material where TShader : struct, IShader
     public TShader Shader;
     public Material(TShader shader) => Shader = shader;
 
-    public override void CallTriangleDraw(Rasterizer rasterizer, Primitive<Vector2> screenTriangle, Primitive<Vertex> viewTriangle, Canvas renderTarget)
+    internal override void CallTriangleDraw(Rasterizer rasterizer, Primitive<Vector2> screenTriangle, Primitive<Vertex> viewTriangle, Canvas renderTarget)
     {
         rasterizer.DrawTriangle(screenTriangle, viewTriangle, renderTarget, Shader);
     }

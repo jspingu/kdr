@@ -1,3 +1,5 @@
+namespace KDR;
+
 using System.Numerics;
 using System.Text.RegularExpressions;
 

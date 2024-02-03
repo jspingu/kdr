@@ -1,7 +1,8 @@
+using KDR;
 using System.Numerics;
 using static SDL2.SDL;
 
-public class RootProcess : Processor
+class RootProcess : Processor
 {
     public readonly List<SDL_Scancode> KeysHeld = new();
     bool MouseCaptured = false;

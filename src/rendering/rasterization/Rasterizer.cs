@@ -1,3 +1,5 @@
+namespace KDR;
+
 using static System.MathF;
 using static MathUtil;
 using System.Numerics;
@@ -110,7 +112,7 @@ public abstract class Rasterizer
         }
     }
 
-    public void DrawTriangle<TShader>(Primitive<Vector2> screenTriangle, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
+    internal void DrawTriangle<TShader>(Primitive<Vector2> screenTriangle, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
     {
         Vector2 V1ToV2 = screenTriangle.V2 - screenTriangle.V1;
         Vector2 V1ToV3 = screenTriangle.V3 - screenTriangle.V1;
@@ -175,7 +177,7 @@ public abstract class Rasterizer
 
     public abstract Vector2 Project(Vector3 point);
 
-    public abstract void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader;
+    internal abstract void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader;
 }
 
 public struct Scanline

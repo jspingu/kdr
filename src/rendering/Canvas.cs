@@ -1,3 +1,5 @@
+namespace KDR;
+
 using static SDL2.SDL;
 using System.Runtime.InteropServices;
 using SDL2;

@@ -1,3 +1,5 @@
+namespace KDR;
+
 using System.Numerics;
 using static System.MathF;
 

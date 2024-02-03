@@ -1,3 +1,5 @@
+namespace KDR;
+
 public class Model : Spatial
 {
     public GeometryBuffer GeometryBuffer;
@@ -32,7 +34,7 @@ public class Model : Spatial
         GeometryBuffer.RemoveModel(GetGeometryOffset(ThisEntity.Root, this), GeometryCount);
     }
 
-    public static GeometryCount GetGeometryOffset(Entity root, Model model)
+    static GeometryCount GetGeometryOffset(Entity root, Model model)
     {
         GeometryCount offset = new();
 

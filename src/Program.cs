@@ -1,11 +1,12 @@
-﻿using static SDL2.SDL;
+﻿using KDR;
+using static SDL2.SDL;
 
 public static class Program
 {
 	static readonly int RenderWidth = 960;
 	static readonly int RenderHeight = 540;
 
-	public static readonly Rasterizer Rasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, 5f, 1000f, MathF.PI / 2f);
+	public static readonly Rasterizer Rasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, 10f, 5000f, MathF.PI / 2f);
 	public static readonly Canvas Canvas = new(RenderWidth, RenderHeight);
 	public static readonly GeometryBuffer OpaqueGeometryBuffer = new();
 
@@ -57,6 +58,7 @@ public static class Program
 			root.RenderProcessCascading(Transform3.Default);
 
 			Rasterizer.DrawScene(OpaqueGeometryBuffer, Canvas);
+			// OpaqueGeometryBuffer.Sort();
 			OpaqueGeometryBuffer.ResetState();
 			
 			Canvas.UploadToSDLTexture(SDLTexture);
