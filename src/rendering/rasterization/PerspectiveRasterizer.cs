@@ -14,7 +14,7 @@ public class PerspectiveRasterizer : Rasterizer
 
     public override Vector2 Project(Vector3 point) => Midpoint + Midpoint.X * new Vector2(point.X, -point.Y) / (point.Z * TanHalfFOV);
 
-    public override void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader)
+    public override void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader)
     {
         Vector3 viewAB = viewTriangle.V2.Position - viewTriangle.V1.Position;
         Vector3 viewAC = viewTriangle.V3.Position - viewTriangle.V1.Position;

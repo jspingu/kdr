@@ -68,26 +68,14 @@ public struct Vertex
     }
 }
 
-public struct SpatialPrimitive
+public struct Primitive<T> where T : struct
 {
-    public Vertex V1, V2, V3;
+    public T V1, V2, V3;
 
-    public SpatialPrimitive(Vertex v1, Vertex v2, Vertex v3)
+    public Primitive(T v1, T v2, T v3)
     {
         V1 = v1;
         V2 = v2;
         V3 = v3;
-    }
-}
-
-public struct Primitive
-{
-    public Vector2 A, B, C;
-
-    public Primitive(Vector2 a, Vector2 b, Vector2 c)
-    {
-        A = a;
-        B = b;
-        C = c;
     }
 }

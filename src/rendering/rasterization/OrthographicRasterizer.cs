@@ -6,7 +6,7 @@ public class OrthographicRasterizer : Rasterizer
 
     public override Vector2 Project(Vector3 point) => Midpoint + new Vector2(point.X, -point.Y);
 
-    public override void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader)
+    public override void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader)
     {
         Basis2 inverseTransform = new Basis2(
             Project(viewTriangle.V2.Position) - Project(viewTriangle.V1.Position),

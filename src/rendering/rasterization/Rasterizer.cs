@@ -54,7 +54,7 @@ public abstract class Rasterizer
                 geometryBuffer.ViewSpaceVertices[face.V1]
             };
 
-            SpatialPrimitive viewTriangle = new(
+            Primitive<Vertex> viewTriangle = new(
                 new Vertex(viewTriangleVertices[0], geometryBuffer.TextureVertices[face.T1]),
                 new Vertex(viewTriangleVertices[1], geometryBuffer.TextureVertices[face.T2]),
                 new Vertex(viewTriangleVertices[2], geometryBuffer.TextureVertices[face.T3])
@@ -99,7 +99,7 @@ public abstract class Rasterizer
 
             for(int i = 0; i < vertexCount - 2; i++)
             {
-                Primitive screenTriangle = new(
+                Primitive<Vector2> screenTriangle = new(
                     clippedVertices[0],
                     clippedVertices[i + 1],
                     clippedVertices[i + 2]
@@ -110,26 +110,26 @@ public abstract class Rasterizer
         }
     }
 
-    public void DrawTriangle<TShader>(Primitive screenTriangle, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
+    public void DrawTriangle<TShader>(Primitive<Vector2> screenTriangle, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
     {
-        Vector2 AToB = screenTriangle.B - screenTriangle.A;
-        Vector2 AToC = screenTriangle.C - screenTriangle.A;
+        Vector2 V1ToV2 = screenTriangle.V2 - screenTriangle.V1;
+        Vector2 V1ToV3 = screenTriangle.V3 - screenTriangle.V1;
 
-        float AToBFirst = Vector2.Dot(AToB.ClockwiseNormal(), AToC);
+        float AToBFirst = Vector2.Dot(V1ToV2.ClockwiseNormal(), V1ToV3);
 
         if (AToBFirst <= 0) return; // Vertices not in clockwise order or triangle sides are parallel
 
-        float primMinY = screenTriangle.A.Y + Min(Min(AToB.Y, 0), AToC.Y);
-        float primMaxY = screenTriangle.A.Y + Max(Max(AToB.Y, 0), AToC.Y);
+        float primMinY = screenTriangle.V1.Y + Min(Min(V1ToV2.Y, 0), V1ToV3.Y);
+        float primMaxY = screenTriangle.V1.Y + Max(Max(V1ToV2.Y, 0), V1ToV3.Y);
 
         int primUpperBound = Math.Clamp(RoundTopLeft(primMinY), 0, Height);
         int primLowerBound = Math.Clamp(RoundTopLeft(primMaxY), 0, Height);
 
         Scanline[] scanlines = new Scanline[primLowerBound - primUpperBound];
 
-        Trace(screenTriangle.A, screenTriangle.B, primUpperBound, scanlines);
-        Trace(screenTriangle.B, screenTriangle.C, primUpperBound, scanlines);
-        Trace(screenTriangle.C, screenTriangle.A, primUpperBound, scanlines);
+        Trace(screenTriangle.V1, screenTriangle.V2, primUpperBound, scanlines);
+        Trace(screenTriangle.V2, screenTriangle.V3, primUpperBound, scanlines);
+        Trace(screenTriangle.V3, screenTriangle.V1, primUpperBound, scanlines);
 
         Scan(primUpperBound, primLowerBound, scanlines, viewTriangle, renderTarget, shader);
     }
@@ -175,7 +175,7 @@ public abstract class Rasterizer
 
     public abstract Vector2 Project(Vector3 point);
 
-    public abstract void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, SpatialPrimitive viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader;
+    public abstract void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader;
 }
 
 public struct Scanline
