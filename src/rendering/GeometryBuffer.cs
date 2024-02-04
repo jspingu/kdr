@@ -4,14 +4,14 @@ using System.Numerics;
 
 public class GeometryBuffer
 {
-    public List<Vector3> Vertices = new();
+    List<Vector3> Vertices = new();
+    int TraversedVertices, TraversedFaces;
+    
     public List<Vector2> TextureVertices = new();
     public List<MaterialBoundFace> MatFaces = new();
-
-    public Vector3[] ViewSpaceVertices = Array.Empty<Vector3>();
     public List<MaterialBoundFace> QueuedFaces = new();
 
-    int TraversedVertices, TraversedFaces;
+    public Vector3[] ViewSpaceVertices = Array.Empty<Vector3>();
 
     public GeometryCount AddModel(Model model, GeometryCount offset)
     {

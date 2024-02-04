@@ -34,7 +34,7 @@ public class Model : Spatial
         GeometryBuffer.RemoveModel(GetGeometryOffset(ThisEntity.Root, this), GeometryCount);
     }
 
-    static GeometryCount GetGeometryOffset(Entity root, Model model)
+    public static GeometryCount GetGeometryOffset(Entity root, Model model)
     {
         GeometryCount offset = new();
 

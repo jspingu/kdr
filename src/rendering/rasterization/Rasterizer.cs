@@ -175,9 +175,9 @@ public abstract class Rasterizer
         }
     }
 
-    public abstract Vector2 Project(Vector3 point);
+    protected abstract Vector2 Project(Vector3 point);
 
-    internal abstract void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader;
+    protected abstract void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader;
 }
 
 public struct Scanline

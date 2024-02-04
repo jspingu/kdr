@@ -6,9 +6,9 @@ public class OrthographicRasterizer : Rasterizer
 {
     public OrthographicRasterizer(int width, int height, float near, float far) : base(width, height, near, far) {}
 
-    public override Vector2 Project(Vector3 point) => Midpoint + new Vector2(point.X, -point.Y);
+    protected override Vector2 Project(Vector3 point) => Midpoint + new Vector2(point.X, -point.Y);
 
-    public override void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader)
+    protected override void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader)
     {
         Basis2 inverseTransform = new Basis2(
             Project(viewTriangle.V2.Position) - Project(viewTriangle.V1.Position),
