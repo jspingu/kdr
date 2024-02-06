@@ -15,7 +15,7 @@ public static class Program
 	public static void Quit() => quit = true;
 
 	static void Main()
-	{
+    {
         SDL_Init(SDL_INIT_VIDEO);
 
 		IntPtr SDLWindow = SDL_CreateWindow(

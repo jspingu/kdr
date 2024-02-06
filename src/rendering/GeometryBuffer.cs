@@ -95,18 +95,24 @@ public class GeometryBuffer
         QueuedFaces.Clear();
     }
 
-    // public void Sort()
-    // {
-    //     QueuedFaces.Sort((matface1, matface2) => {
-    //         Vector3 n1 = Vector3.Cross(
-    //             ViewSpaceVertices[matface1.Face.V2] - ViewSpaceVertices[matface1.Face.V1],
-    //             ViewSpaceVertices[matface1.Face.V3] - ViewSpaceVertices[matface1.Face.V1]
-    //         );
+    public void Sort()
+    {
+        QueuedFaces.Sort((matface1, matface2) => {
+            Vector3 n1 = Vector3.Cross(
+                ViewSpaceVertices[matface1.Face.V2] - ViewSpaceVertices[matface1.Face.V1],
+                ViewSpaceVertices[matface1.Face.V3] - ViewSpaceVertices[matface1.Face.V1]
+            );
 
-    //         Vector3 midpoint1 = (ViewSpaceVertices[matface1.Face.V1] + ViewSpaceVertices[matface1.Face.V2] + ViewSpaceVertices[matface1.Face.V3]) / 3;
-    //         Vector3 midpoint2 = (ViewSpaceVertices[matface2.Face.V1] + ViewSpaceVertices[matface2.Face.V2] + ViewSpaceVertices[matface2.Face.V3]) / 3;
+            Vector3 midpoint1 = (ViewSpaceVertices[matface1.Face.V1] + ViewSpaceVertices[matface1.Face.V2] + ViewSpaceVertices[matface1.Face.V3]) / 3;
+            Vector3 midpoint2 = (ViewSpaceVertices[matface2.Face.V1] + ViewSpaceVertices[matface2.Face.V2] + ViewSpaceVertices[matface2.Face.V3]) / 3;
 
-    //         return (int)(midpoint1 - midpoint2).Z;
-    //     });
-    // }
+            return (int)(midpoint1 - midpoint2).Z;
+        });
+
+        void a(Primitive<Vector3> triangle)
+        {
+            Vector3 normal = Vector3.Cross(triangle.V2 - triangle.V1, triangle.V3 - triangle.V1);
+            normal = Math.Sign(Vector3.Dot(triangle.V1, normal)) < 0 ? -normal : normal;
+        }
+    }
 }
