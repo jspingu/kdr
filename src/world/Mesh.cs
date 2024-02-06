@@ -14,4 +14,10 @@ public class Mesh
         TextureVertices = textureVertices;
         Faces = faces;
     }
+
+    public GeometryCount GetCount() => new(
+        Vertices.Length,
+        TextureVertices.Length,
+        Faces.Length
+    );
 }

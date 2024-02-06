@@ -6,9 +6,9 @@ using System.Numerics;
 
 public abstract class Rasterizer
 {
-    public int Width, Height;
-    public float Near, Far;
-    public Vector2 Midpoint;
+    protected int Width, Height;
+    protected float Near, Far;
+    protected Vector2 Midpoint;
 
     public Rasterizer(int width, int height, float near, float far)
     {

@@ -51,7 +51,7 @@ public class Entity
         if(Components.ContainsKey(typeof(T))) RemoveComponent<T>();
         
         Components.Add(typeof(T), component);
-        component.ThisEntity = this;
+        component.ComposingEntity = this;
         if(Root is not null) component.OnTreeEnter();
 
         return this;
@@ -62,7 +62,7 @@ public class Entity
         EntityComponent component = Components[typeof(T)];
 
         if(Root is not null) component.OnTreeExit();
-        component.ThisEntity = null;
+        component.ComposingEntity = null;
         Components.Remove(typeof(T));
         
         return this;

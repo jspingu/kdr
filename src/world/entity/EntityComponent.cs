@@ -2,7 +2,7 @@ namespace KDR;
 
 public abstract class EntityComponent
 {
-    public Entity ThisEntity;
+    public Entity ComposingEntity;
 
     public virtual void OnTreeEnter() {}
     public virtual void OnTreeExit() {}

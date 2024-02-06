@@ -13,22 +13,16 @@ public class GeometryBuffer
 
     public Vector3[] ViewSpaceVertices = Array.Empty<Vector3>();
 
-    public GeometryCount AddModel(Model model, GeometryCount offset)
+    public void AddGeometry(Mesh mesh, Material material, GeometryCount offset)
     {
-        Mesh mesh = model.Mesh;
-
-        GeometryCount meshCount = new(
-            mesh.Vertices.Length,
-            mesh.TextureVertices.Length,
-            mesh.Faces.Length
-        );
+        GeometryCount meshCount = mesh.GetCount();
 
         Vertices.InsertRange(offset.VertexCount, mesh.Vertices);
         TextureVertices.InsertRange(offset.TextureVertexCount, mesh.TextureVertices);
         
         MatFaces.InsertRange(offset.FaceCount, Array.ConvertAll(mesh.Faces, (face) => new MaterialBoundFace(
             face.OffsetIndices(offset.VertexCount, offset.TextureVertexCount), 
-            model.Material
+            material
         )));
         
         for(int i = offset.FaceCount + meshCount.FaceCount; i < MatFaces.Count; i++)
@@ -40,11 +34,9 @@ public class GeometryBuffer
         }
 
         Array.Resize(ref ViewSpaceVertices, Vertices.Capacity);
-
-        return meshCount;
     }
 
-    public void RemoveModel(GeometryCount offset, GeometryCount count)
+    public void RemoveGeometry(GeometryCount offset, GeometryCount count)
     {
         Vertices.RemoveRange(offset.VertexCount, count.VertexCount);
         TextureVertices.RemoveRange(offset.TextureVertexCount, count.TextureVertexCount);

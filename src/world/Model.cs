@@ -2,17 +2,19 @@ namespace KDR;
 
 public class Model : Spatial
 {
-    public GeometryBuffer GeometryBuffer;
-    public GeometryCount GeometryCount;
+    GeometryBuffer GeometryBuffer;
+    GeometryCount GeometryCount;
 
-    public Mesh Mesh;
-    public Material Material;
+    Mesh Mesh;
+    Material Material;
 
     public Model(GeometryBuffer geometryBuffer, Mesh mesh, Material material)
     {
         GeometryBuffer = geometryBuffer;
         Mesh = mesh;
         Material = material;
+
+        GeometryCount = mesh.GetCount();
     }
 
     public override Transform3 RenderProcess(Transform3 viewTransform)
@@ -26,27 +28,33 @@ public class Model : Spatial
 
     public override void OnTreeEnter()
     {
-        GeometryCount = GeometryBuffer.AddModel(this, GetGeometryOffset(ThisEntity.Root, this));
+        GeometryBuffer.AddGeometry(Mesh, Material, GetGeometryOffset());
     }
 
     public override void OnTreeExit()
     {
-        GeometryBuffer.RemoveModel(GetGeometryOffset(ThisEntity.Root, this), GeometryCount);
+        GeometryBuffer.RemoveGeometry(GetGeometryOffset(), GeometryCount);
     }
 
-    public static GeometryCount GetGeometryOffset(Entity root, Model model)
+    public GeometryCount GetGeometryOffset()
     {
+        Entity root = ComposingEntity.Root;
         GeometryCount offset = new();
 
-        if(root.GetComponent<Spatial>() is Model m && m.GeometryBuffer == model.GeometryBuffer)
+        if (root is null)
         {
-            if(m == model) return offset;
+            throw new InvalidOperationException("Model's composing entity does not have a root");
+        }
+
+        if(root.GetComponent<Spatial>() is Model m && m.GeometryBuffer == GeometryBuffer)
+        {
+            if(m == this) return offset;
             offset += m.GeometryCount;
         }
 
-        if(!GetChildrenGeometryOffset(ref offset, root, model))
+        if(!GetChildrenGeometryOffset(ref offset, root, this))
         {
-            throw new InvalidOperationException("Could not find the specified model within the specified root entity's hierarchy");
+            throw new InvalidOperationException("Could not find the specified model within the root entity's hierarchy");
         }
 
         return offset;

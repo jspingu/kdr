@@ -29,7 +29,7 @@ class RootProcess : Processor
 
         cube.GetComponent<Spatial>().Transform.Translation = new Vector3(100,0,0);
 
-        ThisEntity.AddChild(cube);
+        ComposingEntity.AddChild(cube);
 
         RectTexture = SDL_LoadBMP("images/cat.bmp");
         // TextureMap rectShader = new(RectTexture);
@@ -45,7 +45,7 @@ class RootProcess : Processor
                 rectMaterial
             ));
 
-        ThisEntity.AddChild(rect);
+        ComposingEntity.AddChild(rect);
 
         Entity rect2 = new();
         rect2
@@ -58,7 +58,7 @@ class RootProcess : Processor
                 new TestProcess()
             );
 
-        ThisEntity.AddChild(rect2);
+        ComposingEntity.AddChild(rect2);
     }
 
     public override void OnTreeExit()
@@ -86,7 +86,7 @@ class RootProcess : Processor
 
         Basis3 worldToView = Basis3.Identity.Rotated(Vector3.UnitY, Yaw).Rotated(Vector3.UnitX, Pitch);
         
-        ThisEntity.GetComponent<Spatial>().Transform = new(
+        ComposingEntity.GetComponent<Spatial>().Transform = new(
             worldToView,
             -(worldToView * CameraPosition)
         );
