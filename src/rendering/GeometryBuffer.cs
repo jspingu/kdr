@@ -97,22 +97,42 @@ public class GeometryBuffer
 
     public void Sort()
     {
-        QueuedFaces.Sort((matface1, matface2) => {
-            Vector3 n1 = Vector3.Cross(
-                ViewSpaceVertices[matface1.Face.V2] - ViewSpaceVertices[matface1.Face.V1],
-                ViewSpaceVertices[matface1.Face.V3] - ViewSpaceVertices[matface1.Face.V1]
+        QueuedFaces.Sort((matFace1, matFace2) => {
+            Primitive<Vector3> prim1 = new(
+                ViewSpaceVertices[matFace1.Face.V1],
+                ViewSpaceVertices[matFace1.Face.V2],
+                ViewSpaceVertices[matFace1.Face.V3]
             );
 
-            Vector3 midpoint1 = (ViewSpaceVertices[matface1.Face.V1] + ViewSpaceVertices[matface1.Face.V2] + ViewSpaceVertices[matface1.Face.V3]) / 3;
-            Vector3 midpoint2 = (ViewSpaceVertices[matface2.Face.V1] + ViewSpaceVertices[matface2.Face.V2] + ViewSpaceVertices[matface2.Face.V3]) / 3;
+            Primitive<Vector3> prim2 = new(
+                ViewSpaceVertices[matFace2.Face.V1],
+                ViewSpaceVertices[matFace2.Face.V2],
+                ViewSpaceVertices[matFace2.Face.V3]
+            );
 
-            return (int)(midpoint1 - midpoint2).Z;
+            return 0;
         });
 
-        void a(Primitive<Vector3> triangle)
+        Vector3 GetTriangleNormal(Primitive<Vector3> triangle)
         {
             Vector3 normal = Vector3.Cross(triangle.V2 - triangle.V1, triangle.V3 - triangle.V1);
-            normal = Math.Sign(Vector3.Dot(triangle.V1, normal)) < 0 ? -normal : normal;
+            return Vector3.Dot(triangle.V1, normal) > 0 ? -normal : normal;
         }
+
+        int TriangleOneSideThing(Primitive<Vector3> triangle, Vector3 normal)
+        {
+            int flagPositive = 0;
+            int flagNegative = 0;
+
+            for (int i = 0; i < 3; i++)
+            {
+                if (Vector3.Dot(triangle[i], normal) > 0) flagPositive = 1;
+                else if (Vector3.Dot(triangle[i], normal) < 0) flagNegative = -1;
+            }
+
+            return flagNegative + flagPositive;
+        }
+
+        // Further away triangles are "less than" closer triangles
     }
 }
