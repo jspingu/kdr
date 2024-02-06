@@ -39,7 +39,7 @@ public abstract class Rasterizer
 
         for(int faceIndex = 0; faceIndex < geometryBuffer.QueuedFaces.Count; faceIndex++)
         {
-            IndexedFace face = geometryBuffer.MatFaces[faceIndex].Face;
+            IndexedFace face = geometryBuffer.QueuedFaces[faceIndex].Face;
 
             Vector2[] screenTriangleVertices = new Vector2[]
             {
@@ -107,7 +107,7 @@ public abstract class Rasterizer
                     clippedVertices[i + 2]
                 );
 
-                geometryBuffer.MatFaces[faceIndex].Material.CallTriangleDraw(this, screenTriangle, viewTriangle, renderTarget);
+                geometryBuffer.QueuedFaces[faceIndex].Material.CallTriangleDraw(this, screenTriangle, viewTriangle, renderTarget);
             }
         }
     }

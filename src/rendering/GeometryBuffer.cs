@@ -5,13 +5,12 @@ using System.Numerics;
 public class GeometryBuffer
 {
     List<Vector3> Vertices = new();
+    List<MaterialBoundFace> UnqueuedFaces = new();
     int TraversedVertices, TraversedFaces;
     
-    public List<Vector2> TextureVertices = new();
-    public List<MaterialBoundFace> MatFaces = new();
-    public List<MaterialBoundFace> QueuedFaces = new();
-
     public Vector3[] ViewSpaceVertices = Array.Empty<Vector3>();
+    public List<Vector2> TextureVertices = new();
+    public List<MaterialBoundFace> QueuedFaces = new();
 
     public void AddGeometry(Mesh mesh, Material material, GeometryCount offset)
     {
@@ -20,16 +19,16 @@ public class GeometryBuffer
         Vertices.InsertRange(offset.VertexCount, mesh.Vertices);
         TextureVertices.InsertRange(offset.TextureVertexCount, mesh.TextureVertices);
         
-        MatFaces.InsertRange(offset.FaceCount, Array.ConvertAll(mesh.Faces, (face) => new MaterialBoundFace(
+        UnqueuedFaces.InsertRange(offset.FaceCount, Array.ConvertAll(mesh.Faces, (face) => new MaterialBoundFace(
             face.OffsetIndices(offset.VertexCount, offset.TextureVertexCount), 
             material
         )));
         
-        for(int i = offset.FaceCount + meshCount.FaceCount; i < MatFaces.Count; i++)
+        for(int i = offset.FaceCount + meshCount.FaceCount; i < UnqueuedFaces.Count; i++)
         {
-            MatFaces[i] = new MaterialBoundFace(
-                MatFaces[i].Face.OffsetIndices(meshCount.VertexCount, meshCount.TextureVertexCount),
-                MatFaces[i].Material
+            UnqueuedFaces[i] = new MaterialBoundFace(
+                UnqueuedFaces[i].Face.OffsetIndices(meshCount.VertexCount, meshCount.TextureVertexCount),
+                UnqueuedFaces[i].Material
             );
         }
 
@@ -40,13 +39,13 @@ public class GeometryBuffer
     {
         Vertices.RemoveRange(offset.VertexCount, count.VertexCount);
         TextureVertices.RemoveRange(offset.TextureVertexCount, count.TextureVertexCount);
-        MatFaces.RemoveRange(offset.FaceCount, count.FaceCount);
+        UnqueuedFaces.RemoveRange(offset.FaceCount, count.FaceCount);
 
-        for(int i = offset.FaceCount; i < MatFaces.Count; i++)
+        for(int i = offset.FaceCount; i < UnqueuedFaces.Count; i++)
         {
-            MatFaces[i] = new MaterialBoundFace(
-                MatFaces[i].Face.OffsetIndices(-count.VertexCount, -count.TextureVertexCount),
-                MatFaces[i].Material
+            UnqueuedFaces[i] = new MaterialBoundFace(
+                UnqueuedFaces[i].Face.OffsetIndices(-count.VertexCount, -count.TextureVertexCount),
+                UnqueuedFaces[i].Material
             );
         }
     }
@@ -55,7 +54,7 @@ public class GeometryBuffer
     {
         for(int i = faceOffset; i < faceOffset + faceCount; i++)
         {
-            MatFaces[i] = new MaterialBoundFace(MatFaces[i].Face, material);
+            UnqueuedFaces[i] = new MaterialBoundFace(UnqueuedFaces[i].Face, material);
         }
     }
 
@@ -75,7 +74,7 @@ public class GeometryBuffer
 
     public void QueueFaces(int faceCount)
     {
-        QueuedFaces.AddRange(MatFaces.GetRange(TraversedFaces, faceCount));
+        QueuedFaces.AddRange(UnqueuedFaces.GetRange(TraversedFaces, faceCount));
         TraversedFaces += faceCount;
     }
 
