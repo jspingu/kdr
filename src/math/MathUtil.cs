@@ -14,13 +14,13 @@ public static class MathUtil
 
 public static class VectorExtensions
 {
-	public static Vector3 Rotated(this Vector3 vector, Vector3 axis, float angle)
-	{
-		Vector3 axisProjection = Vector3.Dot(vector, axis) * axis;
-		Vector3 axisPerpendicular = vector - axisProjection;
-		
-		return axisProjection + Cos(angle) * axisPerpendicular + Sin(angle) * Vector3.Cross(axis, axisPerpendicular);
-	}
+    public static Vector3 Rotated(this Vector3 vector, Vector3 axis, float angle)
+    {
+        Vector3 axisProjection = Vector3.Dot(vector, axis) * axis;
+        Vector3 axisPerpendicular = vector - axisProjection;
+        
+        return axisProjection + Cos(angle) * axisPerpendicular + Sin(angle) * Vector3.Cross(axis, axisPerpendicular);
+    }
 
     // According to screen space coord system
     public static Vector2 ClockwiseNormal(this Vector2 v) => new Vector2(-v.Y, v.X);
