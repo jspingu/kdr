@@ -9,6 +9,7 @@ public static class Program
 	public static readonly Rasterizer Rasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, 10f, 5000f, MathF.PI / 2f);
 	public static readonly Canvas Canvas = new(RenderWidth, RenderHeight);
 	public static readonly GeometryBuffer OpaqueGeometryBuffer = new();
+    public static readonly GeometryBuffer TransparentGeometryBuffer = new();
 
 	static bool quit = false;
 
@@ -57,9 +58,14 @@ public static class Program
 			root.ProcessCascading((float)delta);
 			root.RenderProcessCascading(Transform3.Default);
 
+            Rasterizer.EnableFlags(RasterizerFlags.WriteDepth | RasterizerFlags.CullBackFace);
 			Rasterizer.DrawScene(OpaqueGeometryBuffer, Canvas);
-			// OpaqueGeometryBuffer.Sort();
 			OpaqueGeometryBuffer.ResetState();
+
+            TransparentGeometryBuffer.Sort();
+            Rasterizer.DisableFlags(RasterizerFlags.WriteDepth | RasterizerFlags.CullBackFace);
+            Rasterizer.DrawScene(TransparentGeometryBuffer, Canvas);
+            TransparentGeometryBuffer.ResetState();
 			
 			Canvas.UploadToSDLTexture(SDLTexture);
 

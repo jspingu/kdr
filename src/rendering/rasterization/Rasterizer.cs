@@ -4,11 +4,22 @@ using static System.MathF;
 using static MathUtil;
 using System.Numerics;
 
+[Flags]
+public enum RasterizerFlags
+{
+    None = 0,
+    WriteDepth = 1,
+    CullBackFace = 2,
+    All = ~0
+}
+
 public abstract class Rasterizer
 {
     protected int Width, Height;
     protected float Near, Far;
     protected Vector2 Midpoint;
+
+    protected RasterizerFlags RasterizerFlags;
 
     public Rasterizer(int width, int height, float near, float far)
     {
@@ -20,6 +31,10 @@ public abstract class Rasterizer
 
         Midpoint = new Vector2(width, height) / 2f;
     }
+
+    public void EnableFlags(RasterizerFlags flags) => RasterizerFlags |= flags;
+
+    public void DisableFlags(RasterizerFlags flags) => RasterizerFlags &= ~flags;
 
     static Vector3 IntersectViewAlignedPlane(Vector3 start, Vector3 end, float depth)
     {
@@ -119,7 +134,18 @@ public abstract class Rasterizer
 
         float AToBFirst = Vector2.Dot(V1ToV2.ClockwiseNormal(), V1ToV3);
 
-        if (AToBFirst <= 0) return; // Vertices not in clockwise order or triangle sides are parallel
+        int firstIndex = 1;
+        int secondIndex = 2;
+
+        if (AToBFirst == 0) return; // Triangle sides are parallel
+        
+        if (AToBFirst < 0) // Vertices not in clockwise order
+        {
+            if (RasterizerFlags.HasFlag(RasterizerFlags.CullBackFace)) return;
+
+            firstIndex = 2;
+            secondIndex = 1;
+        }
 
         float primMinY = screenTriangle.V1.Y + Min(Min(V1ToV2.Y, 0), V1ToV3.Y);
         float primMaxY = screenTriangle.V1.Y + Max(Max(V1ToV2.Y, 0), V1ToV3.Y);
@@ -129,9 +155,9 @@ public abstract class Rasterizer
 
         Scanline[] scanlines = new Scanline[primLowerBound - primUpperBound];
 
-        Trace(screenTriangle.V1, screenTriangle.V2, primUpperBound, scanlines);
-        Trace(screenTriangle.V2, screenTriangle.V3, primUpperBound, scanlines);
-        Trace(screenTriangle.V3, screenTriangle.V1, primUpperBound, scanlines);
+        Trace(screenTriangle[0], screenTriangle[firstIndex], primUpperBound, scanlines);
+        Trace(screenTriangle[firstIndex], screenTriangle[secondIndex], primUpperBound, scanlines);
+        Trace(screenTriangle[secondIndex], screenTriangle[0], primUpperBound, scanlines);
 
         Scan(primUpperBound, primLowerBound, scanlines, viewTriangle, renderTarget, shader);
     }

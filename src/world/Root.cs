@@ -40,17 +40,19 @@ class RootProcess : Processor
         Entity rect = new();
         rect
             .SetComponent<Spatial>(new Model(
-                Program.OpaqueGeometryBuffer,
+                Program.TransparentGeometryBuffer,
                 MeshBuilder.CreateRectangleMesh(500, 500),
                 rectMaterial
             ));
+
+        rect.GetComponent<Spatial>().Transform.Translation = new Vector3(0, 0, 200);
 
         ComposingEntity.AddChild(rect);
 
         Entity rect2 = new();
         rect2
             .SetComponent<Spatial>(new Model(
-                Program.OpaqueGeometryBuffer,
+                Program.TransparentGeometryBuffer,
                 MeshBuilder.CreateRectangleMesh(500, 500),
                 rectMaterial
             ))

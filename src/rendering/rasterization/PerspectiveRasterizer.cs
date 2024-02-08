@@ -52,7 +52,7 @@ public class PerspectiveRasterizer : Rasterizer
                 float fragmentDepth = normalDisplacement / Vector3.Dot(new Vector3(projPlane, 1), normal);
 
                 if (fragmentDepth > renderTarget.DepthBuffer[offset + x]) continue;
-                renderTarget.DepthBuffer[offset + x] = fragmentDepth;
+                if (RasterizerFlags.HasFlag(RasterizerFlags.WriteDepth)) renderTarget.DepthBuffer[offset + x] = fragmentDepth;
 
                 Vector2 fragmentTexCoord = viewTriangle.V1.TexCoord + (textureTransform * (new Vector3(projPlane, 1) * fragmentDepth - viewTriangle.V1.Position)).ToVector2();
 
