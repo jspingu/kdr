@@ -15,6 +15,7 @@ class RootProcess : Processor
 
     public override void OnTreeEnter()
     {
+        // Cube
         CubeTexture = SDL_LoadBMP("images/wood.bmp");
         TextureMap cubeShader = new(CubeTexture);
         Material<TextureMap> cubeMaterial = new(cubeShader);
@@ -29,12 +30,9 @@ class RootProcess : Processor
 
         cube.GetComponent<Spatial>().Transform.Translation = new Vector3(100,0,0);
 
-        ComposingEntity.AddChild(cube);
+        // ComposingEntity.AddChild(cube);
 
-        RectTexture = SDL_LoadBMP("images/cat.bmp");
-        // TextureMap rectShader = new(RectTexture);
-        // Material<TextureMap> rectMaterial = new(rectShader);
-
+        // Rectangle 1
         Material<TestTransparency> rectMaterial = new(new TestTransparency());
 
         Entity rect = new();
@@ -49,12 +47,19 @@ class RootProcess : Processor
 
         ComposingEntity.AddChild(rect);
 
+        // Rectangle 2
+        RectTexture = SDL_LoadBMP("images/cat.bmp");
+
+        Material<TextureMapBlend> rect2Material = new(
+            new TextureMapBlend(RectTexture, 180)
+        );
+        
         Entity rect2 = new();
         rect2
             .SetComponent<Spatial>(new Model(
                 Program.TransparentGeometryBuffer,
                 MeshBuilder.CreateRectangleMesh(500, 500),
-                rectMaterial
+                rect2Material
             ))
             .SetComponent<Processor>(
                 new TestProcess()
