@@ -6,7 +6,13 @@ public static class Program
     static readonly int RenderWidth = 960;
     static readonly int RenderHeight = 540;
 
-    public static readonly Rasterizer Rasterizer = new PerspectiveRasterizer(RenderWidth, RenderHeight, 10f, 5000f, MathF.PI / 2f);
+    public static readonly Rasterizer Rasterizer = new Rasterizer(
+        new PerspectiveProjector(MathF.PI / 2f),
+        new PerspectiveScanner(MathF.PI / 2f),
+        10f,
+        5000f
+    );
+
     public static readonly Canvas Canvas = new(RenderWidth, RenderHeight);
     public static readonly GeometryBuffer OpaqueGeometryBuffer = new();
     public static readonly GeometryBuffer TransparentGeometryBuffer = new();
@@ -58,13 +64,11 @@ public static class Program
             root.ProcessCascading((float)delta);
             root.RenderProcessCascading(Transform3.Default);
 
-            Rasterizer.EnableFlags(RasterizerFlags.WriteDepth | RasterizerFlags.CullBackFace);
-            Rasterizer.DrawScene(OpaqueGeometryBuffer, Canvas);
+            Rasterizer.DrawScene(OpaqueGeometryBuffer, Canvas, RasterizerFlags.WriteDepth | RasterizerFlags.TestDepth | RasterizerFlags.CullBackFace);
             OpaqueGeometryBuffer.ResetState();
 
             TransparentGeometryBuffer.Sort();
-            Rasterizer.DisableFlags(RasterizerFlags.WriteDepth | RasterizerFlags.CullBackFace);
-            Rasterizer.DrawScene(TransparentGeometryBuffer, Canvas);
+            Rasterizer.DrawScene(TransparentGeometryBuffer, Canvas, RasterizerFlags.TestDepth | RasterizerFlags.AlphaBlend);
             TransparentGeometryBuffer.ResetState();
             
             Canvas.UploadToSDLTexture(SDLTexture);

@@ -1,22 +1,14 @@
 namespace KDR;
 
-using static System.MathF;
 using System.Numerics;
 
-public class PerspectiveRasterizer : Rasterizer
+public class PerspectiveScanner : IScanner
 {
     float TanHalfFOV;
-    Vector2 ScreenToProjectionPlane;
 
-    public PerspectiveRasterizer(int width, int height, float near, float far, float fieldOfView) : base(width, height, near, far)
-    {
-        TanHalfFOV = Tan(fieldOfView / 2f);
-        ScreenToProjectionPlane = TanHalfFOV / Midpoint.X * new Vector2(1, -1);
-    }
+    public PerspectiveScanner(float fieldOfView) => TanHalfFOV = MathF.Tan(fieldOfView / 2f);
 
-    protected override Vector2 Project(Vector3 point) => Midpoint + Midpoint.X * new Vector2(point.X, -point.Y) / (point.Z * TanHalfFOV);
-
-    protected override void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader)
+    public void Scan<TShader>(int primUpperBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, RenderDetails<TShader> renderDetails) where TShader : struct, IShader
     {
         Vector3 viewAB = viewTriangle.V2.Position - viewTriangle.V1.Position;
         Vector3 viewAC = viewTriangle.V3.Position - viewTriangle.V1.Position;
@@ -41,30 +33,27 @@ public class PerspectiveRasterizer : Rasterizer
 
         float normalDisplacement = Vector3.Dot(viewTriangle.V1.Position, normal);
 
-        Parallel.For(upperBound, lowerBound, (y) => {
-            Scanline currentScan = scanlines[y - upperBound];
-            int offset = y * Width;
+        Vector2 ScreenToProjectionPlane = TanHalfFOV / renderDetails.Target.Midpoint.X * new Vector2(1, -1);
+
+        Parallel.For(primUpperBound, primUpperBound + scanlines.Length, (y) => {
+            Scanline currentScan = scanlines[y - primUpperBound];
+            int offset = y * renderDetails.Target.Width;
             
             for (int x = currentScan.LeftBound; x < currentScan.RightBound; x++)
             {
-                Vector2 projPlane = (new Vector2(x, y) + new Vector2(0.5f, 0.5f) - Midpoint) * ScreenToProjectionPlane;
+                Vector2 projPlane = (new Vector2(x, y) + new Vector2(0.5f, 0.5f) - renderDetails.Target.Midpoint) * ScreenToProjectionPlane;
 
                 float fragmentDepth = normalDisplacement / Vector3.Dot(new Vector3(projPlane, 1), normal);
-
-                if (fragmentDepth > renderTarget.DepthBuffer[offset + x]) continue;
-                if (RasterizerFlags.HasFlag(RasterizerFlags.WriteDepth)) renderTarget.DepthBuffer[offset + x] = fragmentDepth;
-
                 Vector2 fragmentTexCoord = viewTriangle.V1.TexCoord + (textureTransform * (new Vector3(projPlane, 1) * fragmentDepth - viewTriangle.V1.Position)).ToVector2();
 
                 ShaderParam fragment = new ShaderParam(
-                    renderTarget.FrameBuffer[offset + x],
                     x, y,
                     fragmentDepth,
                     fragmentTexCoord,
                     unitNormal
                 );
 
-                renderTarget.FrameBuffer[offset + x] = shader.Compute(fragment);
+                Rasterizer.Fill(offset + x, fragment, renderDetails);
             }
         });
     }

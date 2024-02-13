@@ -25,10 +25,7 @@ public struct TextureMap : IShader
 
 public struct TestTransparency : IShader
 {
-    public uint Compute(ShaderParam fragment)
-    {
-        return AlphaBlend(0xAAFF0000, fragment.Color);
-    }
+    public uint Compute(ShaderParam fragment) => 0xAAFF0000;
 }
 
 public struct TextureMapBlend : IShader
@@ -44,6 +41,6 @@ public struct TextureMapBlend : IShader
 
     public uint Compute(ShaderParam fragment)
     {
-        return AlphaBlend(NearestTexel(fragment.TexCoord, Texture) | Alpha << 24, fragment.Color);
+        return NearestTexel(fragment.TexCoord, Texture) | Alpha << 24;
     }
 }

@@ -1,7 +1,7 @@
 namespace KDR;
 
 using static SDL2.SDL;
-using System.Runtime.InteropServices;
+using System.Numerics;
 
 public class Canvas
 {
@@ -9,11 +9,14 @@ public class Canvas
     public float[] DepthBuffer;
 
     public readonly int Width, Height, Length, Pitch, Bytes;
+    public readonly Vector2 Midpoint;
 
     public Canvas(int width, int height)
     {
         Width = width;
         Height = height;
+
+        Midpoint = new Vector2(width, height) / 2f;
         
         Length = width * height;
         Pitch = width * sizeof(uint);
@@ -28,8 +31,6 @@ public class Canvas
         Array.Clear(FrameBuffer);
         Array.Fill(DepthBuffer, float.MaxValue);
     }
-
-    // public unsafe void PushToSurface(IntPtr surface) => Marshal.Copy(FrameBuffer, 0, ((SDL_Surface*)surface)->pixels, Length);
 
     public unsafe void PushToSurface(IntPtr surface) 
     {

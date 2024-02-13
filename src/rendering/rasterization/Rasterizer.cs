@@ -2,39 +2,23 @@ namespace KDR;
 
 using static System.MathF;
 using static MathUtil;
+using static ShaderUtil;
 using System.Numerics;
 
-[Flags]
-public enum RasterizerFlags
+public class Rasterizer
 {
-    None = 0,
-    WriteDepth = 1,
-    CullBackFace = 2,
-    All = ~0
-}
+    IProjector Projector;
+    IScanner Scanner;
+    float Near, Far;
 
-public abstract class Rasterizer
-{
-    protected int Width, Height;
-    protected float Near, Far;
-    protected Vector2 Midpoint;
-
-    protected RasterizerFlags RasterizerFlags;
-
-    public Rasterizer(int width, int height, float near, float far)
+    public Rasterizer(IProjector projector, IScanner scanner, float near, float far)
     {
-        Width = width;
-        Height = height;
+        Projector = projector;
+        Scanner = scanner;
 
         Near = near;
         Far = far;
-
-        Midpoint = new Vector2(width, height) / 2f;
     }
-
-    public void EnableFlags(RasterizerFlags flags) => RasterizerFlags |= flags;
-
-    public void DisableFlags(RasterizerFlags flags) => RasterizerFlags &= ~flags;
 
     static Vector3 IntersectViewAlignedPlane(Vector3 start, Vector3 end, float depth)
     {
@@ -42,14 +26,14 @@ public abstract class Rasterizer
         return start + path / path.Z * (depth - start.Z);
     }
 
-    public void DrawScene(GeometryBuffer geometryBuffer, Canvas renderTarget)
+    public void DrawScene(GeometryBuffer geometryBuffer, Canvas renderTarget, RasterizerFlags options)
     {
         Vector2[] screenSpaceVertices = new Vector2[geometryBuffer.ViewSpaceVertices.Length];
 
         for(int i = 0; i < screenSpaceVertices.Length; i++)
         {
             if (geometryBuffer.ViewSpaceVertices[i].Z > Far || geometryBuffer.ViewSpaceVertices[i].Z < Near) continue;
-            screenSpaceVertices[i] = Project(geometryBuffer.ViewSpaceVertices[i]);
+            screenSpaceVertices[i] = Projector.Project(geometryBuffer.ViewSpaceVertices[i], renderTarget.Midpoint);
         }
 
         for(int faceIndex = 0; faceIndex < geometryBuffer.QueuedFaces.Count; faceIndex++)
@@ -110,8 +94,8 @@ public abstract class Rasterizer
                     secondCondition = next.Z < Near;
                 }
 
-                if (firstCondition) clippedVertices[vertexCount++] = Project(IntersectViewAlignedPlane(current, next, firstDepth));
-                if (secondCondition) clippedVertices[vertexCount++] = Project(IntersectViewAlignedPlane(current, next, secondDepth));
+                if (firstCondition) clippedVertices[vertexCount++] = Projector.Project(IntersectViewAlignedPlane(current, next, firstDepth), renderTarget.Midpoint);
+                if (secondCondition) clippedVertices[vertexCount++] = Projector.Project(IntersectViewAlignedPlane(current, next, secondDepth), renderTarget.Midpoint);
             }
 
             for(int i = 0; i < vertexCount - 2; i++)
@@ -122,12 +106,12 @@ public abstract class Rasterizer
                     clippedVertices[i + 2]
                 );
 
-                geometryBuffer.QueuedFaces[faceIndex].Material.CallTriangleDraw(this, screenTriangle, viewTriangle, renderTarget);
+                geometryBuffer.QueuedFaces[faceIndex].Material.CallTriangleDraw(this, screenTriangle, viewTriangle, renderTarget, options);
             }
         }
     }
 
-    internal void DrawTriangle<TShader>(Primitive<Vector2> screenTriangle, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader
+    internal void DrawTriangle<TShader>(Primitive<Vector2> screenTriangle, Primitive<Vertex> viewTriangle, RenderDetails<TShader> renderDetails) where TShader : struct, IShader
     {
         Vector2 V1ToV2 = screenTriangle.V2 - screenTriangle.V1;
         Vector2 V1ToV3 = screenTriangle.V3 - screenTriangle.V1;
@@ -141,7 +125,7 @@ public abstract class Rasterizer
         
         if (AToBFirst < 0) // Vertices not in clockwise order
         {
-            if (RasterizerFlags.HasFlag(RasterizerFlags.CullBackFace)) return;
+            if (renderDetails.Options.HasFlag(RasterizerFlags.CullBackFace)) return;
 
             firstIndex = 2;
             secondIndex = 1;
@@ -150,19 +134,19 @@ public abstract class Rasterizer
         float primMinY = screenTriangle.V1.Y + Min(Min(V1ToV2.Y, 0), V1ToV3.Y);
         float primMaxY = screenTriangle.V1.Y + Max(Max(V1ToV2.Y, 0), V1ToV3.Y);
 
-        int primUpperBound = Math.Clamp(RoundTopLeft(primMinY), 0, Height);
-        int primLowerBound = Math.Clamp(RoundTopLeft(primMaxY), 0, Height);
+        int primUpperBound = Math.Clamp(RoundTopLeft(primMinY), 0, renderDetails.Target.Height);
+        int primLowerBound = Math.Clamp(RoundTopLeft(primMaxY), 0, renderDetails.Target.Height);
 
         Scanline[] scanlines = new Scanline[primLowerBound - primUpperBound];
 
-        Trace(screenTriangle[0], screenTriangle[firstIndex], primUpperBound, scanlines);
-        Trace(screenTriangle[firstIndex], screenTriangle[secondIndex], primUpperBound, scanlines);
-        Trace(screenTriangle[secondIndex], screenTriangle[0], primUpperBound, scanlines);
+        Trace(screenTriangle.V1, screenTriangle[firstIndex], primUpperBound, scanlines, renderDetails.Target);
+        Trace(screenTriangle[firstIndex], screenTriangle[secondIndex], primUpperBound, scanlines, renderDetails.Target);
+        Trace(screenTriangle[secondIndex], screenTriangle.V1, primUpperBound, scanlines, renderDetails.Target);
 
-        Scan(primUpperBound, primLowerBound, scanlines, viewTriangle, renderTarget, shader);
+        Scanner.Scan(primUpperBound, scanlines, viewTriangle, renderDetails);
     }
 
-    void Trace(Vector2 start, Vector2 end, int primUpperBound, Scanline[] scanlines)
+    void Trace(Vector2 start, Vector2 end, int primUpperBound, Scanline[] scanlines, Canvas renderTarget)
     {
         Vector2 tracePath = end - start;
 
@@ -170,8 +154,8 @@ public abstract class Rasterizer
 
         float slopeX = tracePath.X / tracePath.Y;
 
-        int traceUpperBound = Math.Clamp(RoundTopLeft(Min(start.Y, end.Y)), 0, Height);
-        int traceLowerBound = Math.Clamp(RoundTopLeft(Max(start.Y, end.Y)), 0, Height);
+        int traceUpperBound = Math.Clamp(RoundTopLeft(Min(start.Y, end.Y)), 0, renderTarget.Height);
+        int traceLowerBound = Math.Clamp(RoundTopLeft(Max(start.Y, end.Y)), 0, renderTarget.Height);
 
         int traceLength = traceLowerBound - traceUpperBound;
 
@@ -182,7 +166,7 @@ public abstract class Rasterizer
 
             for (int i = 0; i < traceLength; i++)
             {
-                scanlines[scanlineIndex].LeftBound = Math.Clamp(RoundTopLeft(offsetX), 0, Width);
+                scanlines[scanlineIndex].LeftBound = Math.Clamp(RoundTopLeft(offsetX), 0, renderTarget.Width);
                 offsetX -= slopeX;
                 scanlineIndex--;
             }
@@ -194,22 +178,26 @@ public abstract class Rasterizer
 
             for (int i = 0; i < traceLength; i++)
             {
-                scanlines[scanlineIndex].RightBound = Math.Clamp(RoundTopLeft(offsetX), 0, Width);
+                scanlines[scanlineIndex].RightBound = Math.Clamp(RoundTopLeft(offsetX), 0, renderTarget.Width);
                 offsetX += slopeX;
                 scanlineIndex++;
             }
         }
     }
 
-    protected abstract Vector2 Project(Vector3 point);
+    public static void Fill<TShader>(int index, ShaderParam fragment, RenderDetails<TShader> renderDetails) where TShader : struct, IShader
+    {
+        Canvas renderTarget = renderDetails.Target;
+        RasterizerFlags options = renderDetails.Options;
 
-    protected abstract void Scan<TShader>(int upperBound, int lowerBound, Scanline[] scanlines, Primitive<Vertex> viewTriangle, Canvas renderTarget, TShader shader) where TShader : struct, IShader;
-}
+        uint color = renderDetails.Shader.Compute(fragment);
 
-public struct Scanline
-{
-    public int LeftBound;
-    public int RightBound;
+        if (options.HasFlag(RasterizerFlags.AlphaScissor) && color >> 24 == 0) return;
+        if (options.HasFlag(RasterizerFlags.TestDepth) && fragment.Depth > renderTarget.DepthBuffer[index]) return;
 
-    public override string ToString() => $"{LeftBound}, {RightBound}";
+        if (options.HasFlag(RasterizerFlags.WriteDepth)) renderTarget.DepthBuffer[index] = fragment.Depth;
+
+        if (options.HasFlag(RasterizerFlags.AlphaBlend)) renderTarget.FrameBuffer[index] = AlphaBlend(color, renderTarget.FrameBuffer[index]);
+        else                                             renderTarget.FrameBuffer[index] = color;
+    }
 }
