@@ -43,8 +43,6 @@ class RootProcess : Processor
                 rectMaterial
             ));
 
-        rect.GetComponent<Spatial>().Transform.Translation = new Vector3(0, 0, 200);
-
         ComposingEntity.AddChild(rect);
 
         // Rectangle 2
@@ -58,7 +56,7 @@ class RootProcess : Processor
         rect2
             .SetComponent<Spatial>(new Model(
                 Program.TransparentGeometryBuffer,
-                MeshBuilder.CreateRectangleMesh(500, 500),
+                MeshBuilder.CreateRectangleMesh(1000, 500),
                 rect2Material
             ))
             .SetComponent<Processor>(

@@ -124,7 +124,13 @@ public class GeometryBuffer
             Vector3 normal = Vector3.Cross(from.V2 - from.V1, from.V3 - from.V1);
             float normalDisplacement = Vector3.Dot(from.V1, normal);
 
-            normal = normalDisplacement > 0 ? -normal : normal;
+            // normal = normalDisplacement > 0 ? -normal : normal;
+
+            if (normalDisplacement > 0)
+            {
+                normal = -normal;
+                normalDisplacement = -normalDisplacement;
+            }
 
             int flagPositive = 0;
             int flagNegative = 0;
