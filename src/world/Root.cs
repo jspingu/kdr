@@ -43,20 +43,20 @@ class RootProcess : Processor
                 rectMaterial
             ));
 
-        ComposingEntity.AddChild(rect);
+        // ComposingEntity.AddChild(rect);
 
         // Rectangle 2
         RectTexture = SDL_LoadBMP("images/cat.bmp");
 
         Material<TextureMapBlend> rect2Material = new(
-            new TextureMapBlend(RectTexture, 180)
+            new TextureMapBlend(RectTexture, 230)
         );
         
         Entity rect2 = new();
         rect2
             .SetComponent<Spatial>(new Model(
                 Program.TransparentGeometryBuffer,
-                MeshBuilder.CreateRectangleMesh(1000, 500),
+                MeshBuilder.CreateRectangleMesh(500, 500),
                 rect2Material
             ))
             .SetComponent<Processor>(
