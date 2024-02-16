@@ -1,10 +1,6 @@
 ﻿using KDR;
 using static SDL2.SDL;
 
-using System.Numerics;
-using static System.MathF;
-using static KDR.MathUtil;
-
 public static class Program
 {
     static readonly int RenderWidth = 960;
@@ -19,7 +15,7 @@ public static class Program
     public static readonly GeometryBuffer OpaqueGeometryBuffer = new();
     public static readonly GeometryBuffer TransparentGeometryBuffer = new();
 
-    static bool quit = true;
+    static bool quit = false;
     static bool dumpSSVs = false;
 
     public static void Quit() => quit = true;
@@ -110,67 +106,5 @@ public static class Program
         SDL_DestroyTexture(SDLTexture);
         
         SDL_Quit();
-
-        int upperBound = RoundTopLeft(3.3078918f);
-        int lowerBound = RoundTopLeft(536.69214f);
-
-        Vector2 start = new(746.69214f, 3.3078918f);
-        Vector2 end = new(213.30789f, 536.69214f);
-
-        Scanline[] scanlines = new Scanline[lowerBound - upperBound];
-        Scanline[] scanlines2 = new Scanline[lowerBound - upperBound];
-        List<(float, int)> offsets = new();
-        List<(float, int)> offsets2 = new();
-
-        Trace(start, end, upperBound, scanlines, Canvas, offsets);
-        Trace(end, start, upperBound, scanlines2, Canvas, offsets2);
-
-        offsets2.Reverse();
-
-        for (int i = 0; i < offsets.Count; i++)
-        {
-            Console.WriteLine($"offset: {offsets[i].Item1}, rtplft: {offsets[i].Item2} | offset: {offsets2[i].Item1}, rtplft: {offsets2[i].Item2}");
-        }
-
-        void Trace(Vector2 start, Vector2 end, int primUpperBound, Scanline[] scanlines, Canvas renderTarget, List<(float, int)> stuff)
-        {
-            Vector2 tracePath = end - start;
-
-            if (tracePath.Y == 0) return;
-
-            float slopeX = tracePath.X / tracePath.Y;
-
-            int traceUpperBound = Math.Clamp(RoundTopLeft(Min(start.Y, end.Y)), 0, renderTarget.Height);
-            int traceLowerBound = Math.Clamp(RoundTopLeft(Max(start.Y, end.Y)), 0, renderTarget.Height);
-
-            int traceLength = traceLowerBound - traceUpperBound;
-
-            if (tracePath.Y < 0)
-            {
-                float offsetX = start.X + (traceLowerBound - 0.5f - start.Y) * slopeX;
-                int scanlineIndex = traceLowerBound - primUpperBound - 1;
-
-                for (int i = 0; i < traceLength; i++)
-                {
-                    stuff.Add((offsetX, RoundTopLeft(offsetX)));
-                    scanlines[scanlineIndex].LeftBound = Math.Clamp(RoundTopLeft(offsetX), 0, renderTarget.Width);
-                    offsetX -= slopeX;
-                    scanlineIndex--;
-                }
-            }
-            else
-            {
-                float offsetX = start.X + (traceUpperBound + 0.5f - start.Y) * slopeX;
-                int scanlineIndex = traceUpperBound - primUpperBound;
-
-                for (int i = 0; i < traceLength; i++)
-                {
-                    stuff.Add((offsetX, RoundTopLeft(offsetX)));
-                    scanlines[scanlineIndex].RightBound = Math.Clamp(RoundTopLeft(offsetX), 0, renderTarget.Width);
-                    offsetX += slopeX;
-                    scanlineIndex++;
-                }
-            }
-        }
     }
 }

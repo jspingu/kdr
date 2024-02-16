@@ -131,8 +131,11 @@ public class Rasterizer
             secondIndex = 1;
         }
 
-        float primMinY = screenTriangle.V1.Y + Min(Min(V1ToV2.Y, 0), V1ToV3.Y);
-        float primMaxY = screenTriangle.V1.Y + Max(Max(V1ToV2.Y, 0), V1ToV3.Y);
+        //float primMinY = screenTriangle.V1.Y + Min(Min(V1ToV2.Y, 0), V1ToV3.Y);
+        // float primMaxY = screenTriangle.V1.Y + Max(Max(V1ToV2.Y, 0), V1ToV3.Y);
+
+        float primMinY = Min(Min(screenTriangle.V1.Y, screenTriangle.V2.Y), screenTriangle.V3.Y);
+        float primMaxY = Max(Max(screenTriangle.V1.Y, screenTriangle.V2.Y), screenTriangle.V3.Y);
 
         int primUpperBound = Math.Clamp(RoundTopLeft(primMinY), 0, renderDetails.Target.Height);
         int primLowerBound = Math.Clamp(RoundTopLeft(primMaxY), 0, renderDetails.Target.Height);
@@ -158,23 +161,22 @@ public class Rasterizer
         int traceLowerBound = Math.Clamp(RoundTopLeft(Max(start.Y, end.Y)), 0, renderTarget.Height);
 
         int traceLength = traceLowerBound - traceUpperBound;
+        int scanlineIndex = traceUpperBound - primUpperBound;
 
         if (tracePath.Y < 0)
         {
-            float offsetX = start.X + (traceLowerBound - 0.5f - start.Y) * slopeX;
-            int scanlineIndex = traceLowerBound - primUpperBound - 1;
+            float offsetX = end.X + (traceUpperBound + 0.5f - end.Y) * slopeX;
 
             for (int i = 0; i < traceLength; i++)
             {
                 scanlines[scanlineIndex].LeftBound = Math.Clamp(RoundTopLeft(offsetX), 0, renderTarget.Width);
-                offsetX -= slopeX;
-                scanlineIndex--;
+                offsetX += slopeX;
+                scanlineIndex++;
             }
         }
         else
         {
             float offsetX = start.X + (traceUpperBound + 0.5f - start.Y) * slopeX;
-            int scanlineIndex = traceUpperBound - primUpperBound;
 
             for (int i = 0; i < traceLength; i++)
             {
