@@ -56,7 +56,7 @@ class RootProcess : Processor
         rect2
             .SetComponent<Spatial>(new Model(
                 Program.TransparentGeometryBuffer,
-                MeshBuilder.CreateRectangleMesh(500, 500),
+                MeshBuilder.CreateRectangleMesh(775, 553),
                 rect2Material
             ))
             .SetComponent<Processor>(
