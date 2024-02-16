@@ -131,9 +131,6 @@ public class Rasterizer
             secondIndex = 1;
         }
 
-        //float primMinY = screenTriangle.V1.Y + Min(Min(V1ToV2.Y, 0), V1ToV3.Y);
-        // float primMaxY = screenTriangle.V1.Y + Max(Max(V1ToV2.Y, 0), V1ToV3.Y);
-
         float primMinY = Min(Min(screenTriangle.V1.Y, screenTriangle.V2.Y), screenTriangle.V3.Y);
         float primMaxY = Max(Max(screenTriangle.V1.Y, screenTriangle.V2.Y), screenTriangle.V3.Y);
 
