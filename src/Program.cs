@@ -1,5 +1,6 @@
 ﻿using KDR;
 using static SDL2.SDL;
+using static SDL2.SDL_image;
 
 public static class Program
 {
@@ -24,6 +25,7 @@ public static class Program
     static void Main()
     {
         SDL_Init(SDL_INIT_VIDEO);
+        IMG_Init(IMG_InitFlags.IMG_INIT_JPG | IMG_InitFlags.IMG_INIT_PNG);
 
         IntPtr SDLWindow = SDL_CreateWindow(
             "Title",
@@ -31,7 +33,7 @@ public static class Program
             SDL_WINDOWPOS_CENTERED,
             RenderWidth,
             RenderHeight,
-            SDL_WindowFlags.SDL_WINDOW_RESIZABLE
+            SDL_WindowFlags.SDL_WINDOW_RESIZABLE | SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI
         );
 
         IntPtr SDLRenderer = SDL_CreateRenderer(SDLWindow, -1, SDL_RendererFlags.SDL_RENDERER_PRESENTVSYNC);
@@ -105,6 +107,7 @@ public static class Program
         SDL_DestroyRenderer(SDLRenderer);
         SDL_DestroyTexture(SDLTexture);
         
+        IMG_Quit();
         SDL_Quit();
     }
 }
