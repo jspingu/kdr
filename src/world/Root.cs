@@ -11,26 +11,27 @@ class RootProcess : Processor
     float Yaw = 0;
     float Pitch = 0;
 
-    IntPtr CubeTexture, RectTexture;
+    Texture Marble;
 
     public override void OnTreeEnter()
     {
+        Marble = new Texture("assets/images/marble.jpg");
+
         // Cube
-        CubeTexture = SDL_LoadBMP("images/wood.bmp");
-        TextureMap cubeShader = new(CubeTexture);
+        TextureMap cubeShader = new(Marble);
         Material<TextureMap> cubeMaterial = new(cubeShader);
 
         Entity cube = new();
         cube
             .SetComponent<Spatial>(new Model(
                 Program.OpaqueGeometryBuffer,
-                MeshBuilder.BuildFromFile("assets/cube.mesh"),
+                MeshBuilder.BuildFromFile("assets/geometry/cube.mesh"),
                 cubeMaterial
             ));
 
         cube.GetComponent<Spatial>().Transform.Translation = new Vector3(100,0,0);
 
-        // ComposingEntity.AddChild(cube);
+        ComposingEntity.AddChild(cube);
 
         // Rectangle 1
         Material<TestTransparency> rectMaterial = new(new TestTransparency());
@@ -46,17 +47,15 @@ class RootProcess : Processor
         // ComposingEntity.AddChild(rect);
 
         // Rectangle 2
-        RectTexture = SDL_LoadBMP("images/cat.bmp");
-
         Material<TextureMapBlend> rect2Material = new(
-            new TextureMapBlend(RectTexture, 230)
+            new TextureMapBlend(Marble, 150)
         );
         
         Entity rect2 = new();
         rect2
             .SetComponent<Spatial>(new Model(
                 Program.TransparentGeometryBuffer,
-                MeshBuilder.CreateRectangleMesh(775, 553),
+                MeshBuilder.CreateRectangleMesh(500, 500),
                 rect2Material
             ))
             .SetComponent<Processor>(
@@ -68,8 +67,7 @@ class RootProcess : Processor
 
     public override void OnTreeExit()
     {
-        SDL_FreeSurface(CubeTexture);
-        SDL_FreeSurface(RectTexture);
+        Marble.Dispose();
     }
 
     public override void Process(float delta)

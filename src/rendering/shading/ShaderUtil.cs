@@ -1,22 +1,18 @@
 namespace KDR;
 
-using static SDL2.SDL;
-using static System.MathF;
 using System.Numerics;
 
 public static class ShaderUtil
 {
-    public static unsafe uint NearestTexel(Vector2 texCoord, IntPtr texture)
+    public static uint NearestTexel(Vector2 texCoord, Texture texture)
     {
-        SDL_Surface* texturePtr = (SDL_Surface*)texture;
+        int texelX = Math.Clamp((int)(texCoord.X * texture.Unit), 0, texture.Width - 1);
+        int texelY = Math.Clamp((int)(texCoord.Y * texture.Unit), 0, texture.Height - 1);
 
-        int unit = Math.Max(texturePtr->w, texturePtr->h);
-
-        int texelX = Math.Clamp((int)(texCoord.X * unit), 0, texturePtr->w - 1);
-        int texelY = Math.Clamp((int)(texCoord.Y * unit), 0, texturePtr->h - 1);
-
-        return ((uint*)texturePtr->pixels)[texelX + texelY * texturePtr->w];
+        return texture[texelX + texelY * texture.Width];
     }
+
+    public static uint AlphaDivide(uint d) => d + 1 + (d >> 8) >> 8;
 
     public static uint AlphaBlend(uint f, uint b)
     {
