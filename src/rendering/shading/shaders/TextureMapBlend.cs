@@ -15,6 +15,9 @@ public struct TextureMapBlend : IShader
 
     public uint Compute(ShaderParam fragment)
     {
-        return NearestTexel(fragment.TexCoord, Texture) & 0xFFFFFF | Alpha << 24;
+        uint color = NearestTexel(fragment.TexCoord, Texture);
+        uint alpha = AlphaDivide((color >> 24) * Alpha); 
+
+        return color & 0xFFFFFF | alpha << 24;
     }
 }

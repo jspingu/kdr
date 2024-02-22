@@ -23,9 +23,9 @@ public static class ShaderUtil
         return rb + 0x10001 + ((rb >> 8) & 0xFF00FF) >> 8 & 0xFF00FF | g + 0x100 + (g >> 8) >> 8 & 0xFF00;
     }
 
-    public static uint Color(uint r, uint g, uint b) => (r<<16) + (g<<8) + b;
+    public static uint Color(uint r, uint g, uint b) => r | (g << 8) | (b << 16);
 
     public static uint Color(Vector3 col) => Color((uint)col.X, (uint)col.Y, (uint)col.Z);
 
-    public static Vector3 VectorColor(uint i) => new(i>>16, (i>>8) & 0xFF, i & 0xFF);
+    public static Vector3 VectorColor(uint i) => new(i & 0xFF, (i >> 8) & 0xFF, (i >> 16) & 0xFF);
 }

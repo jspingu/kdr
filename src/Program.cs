@@ -40,7 +40,7 @@ public static class Program
         
         IntPtr SDLTexture = SDL_CreateTexture(
             SDLRenderer, 
-            SDL_PIXELFORMAT_XRGB888, 
+            SDL_PIXELFORMAT_XBGR888, 
             (int)SDL_TextureAccess.SDL_TEXTUREACCESS_STREAMING, 
             RenderWidth, 
             RenderHeight
@@ -87,7 +87,13 @@ public static class Program
                 Quit();
             }
 
-            Rasterizer.DrawScene(OpaqueGeometryBuffer, Canvas, RasterizerFlags.WriteDepth | RasterizerFlags.TestDepth | RasterizerFlags.CullBackFace);
+            Rasterizer.DrawScene(OpaqueGeometryBuffer, Canvas, 
+                RasterizerFlags.WriteDepth | 
+                RasterizerFlags.TestDepth | 
+                RasterizerFlags.CullBackFace |
+                RasterizerFlags.AlphaScissor
+            );
+            
             OpaqueGeometryBuffer.ResetState();
 
             TransparentGeometryBuffer.Sort();

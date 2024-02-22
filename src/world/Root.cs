@@ -11,11 +11,12 @@ class RootProcess : Processor
     float Yaw = 0;
     float Pitch = 0;
 
-    Texture Marble;
+    Texture Marble, SpriteFont;
 
     public override void OnTreeEnter()
     {
         Marble = new Texture("assets/images/marble.jpg");
+        SpriteFont = new Texture("assets/images/test spritefont.png");
 
         // Cube
         TextureMap cubeShader = new(Marble);
@@ -29,45 +30,29 @@ class RootProcess : Processor
                 cubeMaterial
             ));
 
-        cube.GetComponent<Spatial>().Transform.Translation = new Vector3(100,0,0);
+        cube.GetComponent<Spatial>().Transform.Translation = 200 * Vector3.UnitZ;
 
         ComposingEntity.AddChild(cube);
 
         // Rectangle 1
-        Material<TestTransparency> rectMaterial = new(new TestTransparency());
+        Material<TileMap> rectMaterial = new(new TileMap(SpriteFont, 7, 5));
+        rectMaterial.Shader.Index = 0;
 
         Entity rect = new();
         rect
             .SetComponent<Spatial>(new Model(
-                Program.TransparentGeometryBuffer,
-                MeshBuilder.CreateRectangleMesh(500, 500),
+                Program.OpaqueGeometryBuffer,
+                MeshBuilder.CreateRectangleMesh(7 * 20, 9 * 20),
                 rectMaterial
             ));
 
-        // ComposingEntity.AddChild(rect);
-
-        // Rectangle 2
-        Material<TextureMapBlend> rect2Material = new(
-            new TextureMapBlend(Marble, 150)
-        );
-        
-        Entity rect2 = new();
-        rect2
-            .SetComponent<Spatial>(new Model(
-                Program.TransparentGeometryBuffer,
-                MeshBuilder.CreateRectangleMesh(500, 500),
-                rect2Material
-            ))
-            .SetComponent<Processor>(
-                new TestProcess()
-            );
-
-        ComposingEntity.AddChild(rect2);
+        ComposingEntity.AddChild(rect);
     }
 
     public override void OnTreeExit()
     {
         Marble.Dispose();
+        SpriteFont.Dispose();
     }
 
     public override void Process(float delta)

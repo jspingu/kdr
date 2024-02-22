@@ -21,11 +21,23 @@ public unsafe class Texture : IDisposable
         Surface = (SDL_Surface*)IMG_Load(path);
         if (Surface == null) throw new FileNotFoundException("Failed to load texture", path);
 
-        if ( ((SDL_PixelFormat*)Surface->format)->format != SDL_PIXELFORMAT_ARGB8888 )
+        bool hasAlpha = SDL_ISPIXELFORMAT_ALPHA(((SDL_PixelFormat*)Surface->format)->format);
+
+        if ( ((SDL_PixelFormat*)Surface->format)->format != SDL_PIXELFORMAT_ABGR8888 )
         {
-            SDL_Surface* temp = (SDL_Surface*)SDL_ConvertSurfaceFormat((IntPtr)Surface, SDL_PIXELFORMAT_ARGB8888, 0);
+            SDL_Surface* temp = (SDL_Surface*)SDL_ConvertSurfaceFormat((IntPtr)Surface, SDL_PIXELFORMAT_ABGR8888, 0);
             SDL_FreeSurface((IntPtr)Surface);
             Surface = temp;
+
+            if (!hasAlpha)
+            {
+                SDL_LockSurface((IntPtr)Surface);
+                
+                uint* pixel = (uint*)(Surface->pixels);
+                for (int i = 0; i < Surface->w * Surface->h; i++) *pixel++ |= 0xFF000000;
+
+                SDL_UnlockSurface((IntPtr)Surface);
+            }
         }
 
         Width = Surface->w;
