@@ -1,6 +1,6 @@
 namespace KDR;
 
-public struct RenderDetails<TShader> where TShader : struct, IShader
+public class RenderDetails<TShader> where TShader : struct, IShader
 {
     public Canvas Target;
     public RasterizerFlags Options;
