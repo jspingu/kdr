@@ -2,11 +2,11 @@ namespace KDR;
 
 public class Model : Spatial
 {
+    public Mesh Mesh;
+    public Material Material;
+    
     GeometryBuffer GeometryBuffer;
     GeometryCount GeometryCount;
-
-    Mesh Mesh;
-    Material Material;
 
     public Model(GeometryBuffer geometryBuffer, Mesh mesh, Material material)
     {

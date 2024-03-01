@@ -1,29 +1,26 @@
 using KDR;
-using System.Numerics;
+using static SDL2.SDL;
 
 class TestProcess : Processor
 {
     RootProcess RootProc;
-    Spatial ThisSpatial;
+    Model ThisModel;
+
+    int a = 0;
 
     public override void OnTreeEnter()
     {
         RootProc = (RootProcess)ComposingEntity.Root.GetComponent<Processor>();
-        ThisSpatial = ComposingEntity.GetComponent<Spatial>();
+        ThisModel = (Model)ComposingEntity.GetComponent<Spatial>();
 
-        // ThisSpatial.Transform.Translation = new Vector3(-300, 0, -100);
+        //Console.WriteLine(SDL_GetScancodeName(SDL_Scancode.SDL_SCANCODE_0));
+        Console.WriteLine(++a);
     }
 
     public override void Process(float delta)
     {
-        if (RootProc.KeysHeld.Contains(SDL2.SDL.SDL_Scancode.SDL_SCANCODE_LEFT))
-        {
-            ThisSpatial.Transform.Basis.Rotate(Vector3.UnitY, delta);
-        }
-
-        if (RootProc.KeysHeld.Contains(SDL2.SDL.SDL_Scancode.SDL_SCANCODE_0)) 
-        {
-            Program.DumpSSVs();
-        }
+        Material<TileMap> modelMaterial = (Material<TileMap>)ThisModel.Material;
+        if (RootProc.KeysHeld.Contains(SDL_Scancode.SDL_SCANCODE_LEFT)) modelMaterial.Shader.Index--;
+        else if (RootProc.KeysHeld.Contains(SDL_Scancode.SDL_SCANCODE_RIGHT)) modelMaterial.Shader.Index++;
     }
 }

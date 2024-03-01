@@ -36,7 +36,6 @@ class RootProcess : Processor
 
         // Rectangle 1
         Material<TileMap> rectMaterial = new(new TileMap(SpriteFont, 7, 5));
-        rectMaterial.Shader.Index = 0;
 
         Entity rect = new();
         rect
@@ -44,7 +43,10 @@ class RootProcess : Processor
                 Program.OpaqueGeometryBuffer,
                 MeshBuilder.CreateRectangleMesh(7 * 20, 9 * 20),
                 rectMaterial
-            ));
+            ))
+            .SetComponent<Processor>(
+                new TestProcess()
+            );
 
         ComposingEntity.AddChild(rect);
     }
